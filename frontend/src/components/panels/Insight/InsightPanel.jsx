@@ -82,7 +82,7 @@ function InsightPanel({
         const memos = await getMemosByBrain(projectId);
         setMemos(memos);
       } catch (err) {
-        console.error("메모/휴지통 불러오기 실패:", err);
+        console.error("Failed to load memos/trash:", err);
       }
     };
     fetch();
@@ -145,7 +145,7 @@ function InsightPanel({
 
       return newMemo.memo_id;
     } catch (e) {
-      console.error("메모 생성 오류:", e);
+      console.error("Memo creation error:", e);
       return null;
     }
   };
@@ -174,8 +174,8 @@ function InsightPanel({
       );
       setSelectedMemoId(null);
     } catch (err) {
-      console.error("메모 저장 오류:", err);
-      alert("메모 저장에 실패했습니다.");
+      console.error("Memo save error:", err);
+      alert("Failed to save memo.");
     }
   };
 
@@ -192,7 +192,7 @@ function InsightPanel({
       );
       if (selectedMemoId === id) setSelectedMemoId(null);
     } catch (err) {
-      console.error("삭제 실패:", err);
+      console.error("Delete failed:", err);
     }
   };
 
@@ -208,7 +208,7 @@ function InsightPanel({
         prev.map((m) => (m.memo_id === id ? { ...m, is_deleted: false } : m))
       );
     } catch (err) {
-      console.error("복구 실패:", err);
+      console.error("Restore failed:", err);
     }
   };
 
@@ -223,7 +223,7 @@ function InsightPanel({
       setMemos((prev) => prev.filter((m) => m.memo_id !== id));
       if (selectedMemoId === id) setSelectedMemoId(null);
     } catch (err) {
-      console.error("완전 삭제 실패:", err);
+      console.error("Hard delete failed:", err);
     }
   };
 
@@ -243,7 +243,7 @@ function InsightPanel({
         setSelectedMemoId(null);
       }
     } catch (err) {
-      console.error("휴지통 비우기 실패:", err);
+      console.error("Empty trash failed:", err);
     }
   };
 
@@ -295,7 +295,7 @@ function InsightPanel({
             <div style={{ display: "flex" }}>
               <button
                 className={`insight-toggle-btn${showGraph ? " active" : ""}`}
-                title="그래프 보기 토글"
+                title="Toggle graph view"
                 onClick={() => setShowGraph((prev) => !prev)}
               >
                 {showGraph ? (
@@ -306,7 +306,7 @@ function InsightPanel({
               </button>
               <button
                 className={`insight-toggle-btn${showMemo ? " active" : ""}`}
-                title="메모 보기 토글"
+                title="Toggle memo view"
                 onClick={() => setShowMemo((prev) => !prev)}
                 style={{ marginRight: "1px" }}
               >
@@ -382,7 +382,7 @@ function InsightPanel({
                     fontSize: "12px",
                   }}
                 >
-                  참조된 노드: {referencedNodes.join(", ")}
+                  Referenced nodes: {referencedNodes.join(", ")}
                 </div>
               )}
             </div>

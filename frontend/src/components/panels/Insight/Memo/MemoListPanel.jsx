@@ -152,9 +152,7 @@ function MemoListPanel({
 
               {/* 음성 텍스트 변환 중 상태 표시 */}
               {isTranscribing && (
-                <div className="transcribing-status-left">
-                  텍스트 변환 중...
-                </div>
+                <div className="transcribing-status-left">Transcribing...</div>
               )}
 
               {/* 마이크 아이콘 (깜빡이며 상태 표시) */}
@@ -178,7 +176,7 @@ function MemoListPanel({
               onClick={handleAddMemo}
               disabled={isAddingMemo}
             >
-              {isAddingMemo ? "추가 중..." : "+ 새 메모"}
+              {isAddingMemo ? "Adding..." : "+ New memo"}
             </button>
           )}
 
@@ -187,10 +185,10 @@ function MemoListPanel({
             <button
               className="empty-trash-button"
               onClick={handleEmptyTrash}
-              title="휴지통 비우기"
+              title="Empty bin"
             >
               <MdOutlineDeleteSweep size={14} />
-              전체 비우기
+              Empty all
             </button>
           )}
         </div>
@@ -203,14 +201,12 @@ function MemoListPanel({
           <div className="memo-empty-state">
             <CgNotes className="memo-empty-icon" />
             <div className="memo-empty-text">
-              {showTrash
-                ? "휴지통이 비어있습니다"
-                : "저장된 메모가 여기에 표시됩니다"}
+              {showTrash ? "The bin is empty" : "Saved memos will appear here"}
             </div>
             <div className="memo-empty-subtext">
               {showTrash
-                ? "삭제된 메모가 여기에 표시됩니다"
-                : "중요한 생각을 메모로 남기고\n드래그해서 소스로 추가하면 그래프에 반영됩니다."}
+                ? "Deleted memos will appear here"
+                : "Capture your thoughts as memos and drag to Sources to reflect in the graph."}
             </div>
           </div>
         )}
@@ -219,6 +215,7 @@ function MemoListPanel({
         {displayedMemos.map((memo) => {
           const id = memo.memo_id;
           const filename = `${memo.memo_title || "메모"}.memo`;
+          const safeTitle = memo.memo_title || "Untitled";
           const content = memo.memo_text || "";
           const isSource = memo.is_source === 1 || memo.is_source === true;
 
@@ -247,13 +244,11 @@ function MemoListPanel({
                 className="memo-item-content"
                 onClick={() => !showTrash && onSelect(id)}
               >
-                <div className="memo-title">
-                  {memo.memo_title || "제목 없음"}
-                </div>
+                <div className="memo-title">{safeTitle}</div>
                 <div className="memo-preview">
                   {content.length > 0
                     ? content.slice(0, 40).replace(/\n/g, " ")
-                    : "내용 없음"}
+                    : "No content"}
                   ...
                 </div>
                 <div className="memo-date">
@@ -289,7 +284,7 @@ function MemoListPanel({
                         e.stopPropagation();
                         handleRestoreMemo(id);
                       }}
-                      title="메모 복구"
+                      title="Restore memo"
                     >
                       <MdOutlineRestore size={18} />
                     </button>
@@ -299,7 +294,7 @@ function MemoListPanel({
                         e.stopPropagation();
                         handleHardDeleteMemo(id);
                       }}
-                      title="메모 완전 삭제"
+                      title="Delete memo permanently"
                     >
                       <MdDeleteForever size={18} />
                     </button>
@@ -311,7 +306,7 @@ function MemoListPanel({
                       e.stopPropagation();
                       handleDeleteMemo(id);
                     }}
-                    title="메모 삭제"
+                    title="Delete memo"
                   >
                     <IoTrashBinOutline size={18} />
                   </button>
@@ -324,7 +319,7 @@ function MemoListPanel({
 
       {/* 하단 총 개수 표시 및 휴지통 토글 */}
       <div className="memo-footer">
-        <div className="memo-count-footer">총 {displayedMemos.length}개</div>
+        <div className="memo-count-footer">Total {displayedMemos.length}</div>
 
         <div
           className="memo-list-header-toggle"
@@ -342,13 +337,13 @@ function MemoListPanel({
               <BsTrash
                 className="header-icon"
                 onClick={toggleTrash}
-                title="휴지통 보기"
+                title="View bin"
               />
             ) : (
               <CiMemoPad
                 className="header-icon"
                 onClick={toggleTrash}
-                title="메모 목록으로"
+                title="Back to memos"
                 size={22}
               />
             )}
@@ -359,7 +354,7 @@ function MemoListPanel({
       {/* 휴지통 비우기 확인 다이얼로그 */}
       {showEmptyTrashDialog && (
         <ConfirmDialog
-          message={`휴지통에 있는 ${displayedMemos.length}개의 메모를 모두 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`}
+          message={`Delete all ${displayedMemos.length} memos in the bin?\n\nThis action cannot be undone.`}
           onOk={handleConfirmEmptyTrash}
           onCancel={() => setShowEmptyTrashDialog(false)}
           isLoading={false}

@@ -112,7 +112,7 @@ function KnowledgeGraphStatusBar({ textLength, nodesCount, edgesCount }) {
           }}
           tabIndex={0}
           role="button"
-          aria-label={collapsed ? "펼치기" : "접기"}
+          aria-label={collapsed ? "Expand" : "Collapse"}
         >
           {collapsed ? <MdExpandLess /> : <MdExpandMore />}
         </span>
@@ -123,41 +123,41 @@ function KnowledgeGraphStatusBar({ textLength, nodesCount, edgesCount }) {
       {!collapsed && (
         <div className="quota-details">
           <div className="data-metric">
-            <span className="metric-label">노드 밀도</span>
+            <span className="metric-label">Node density</span>
             <span className="metric-value">{nodeDensity}</span>
             <span className="qmark-tooltip">
               ?
-              <Tooltip text={"텍스트 1KB당 노드 수"} />
+              <Tooltip text={"Nodes per 1KB of text"} />
             </span>
           </div>
 
           <div className="data-metric">
-            <span className="metric-label">엣지 밀도</span>
+            <span className="metric-label">Edge density</span>
             <span className="metric-value">{edgeDensity}</span>
             <span className="qmark-tooltip">
               ?
-              <Tooltip text={"텍스트 1KB당 관계 수"} />
+              <Tooltip text={"Edges per 1KB of text"} />
             </span>
           </div>
 
           <div className="data-metric">
-            <span className="metric-label">평균 연결도</span>
+            <span className="metric-label">Average degree</span>
             <span className="metric-value">{avgDegree}</span>
             <span className="qmark-tooltip">
               ?
-              <Tooltip text={"노드당 평균 연결 개수"} />
+              <Tooltip text={"Average connections per node"} />
             </span>
           </div>
 
           <div className="data-metric total">
             <div className="kg-total-row">
-              <span className="metric-label">지식 성능 지수</span>
+              <span className="metric-label">Knowledge performance index</span>
               <span className="metric-value">{perfIndex}/10</span>
               <span className="qmark-tooltip">
                 ?
                 <Tooltip
                   text={
-                    "노드·엣지 밀도와 평균 연결도를 각 상한(3.0/9.0/6.0)으로 정규화 후 평균×10으로 계산"
+                    "Normalized average of node/edge density and average degree (0–10)."
                   }
                 />
               </span>

@@ -380,7 +380,7 @@ export default function FileView({
                     marginLeft: "auto",
                   }}
                 >
-                  <span style={{ marginLeft: 4 }}>그래프 변환 중</span>
+                  <span style={{ marginLeft: 4 }}>Converting to graph</span>
                   <AiOutlineLoading3Quarters className="loading-spinner" />
                 </span>
               )}
@@ -403,7 +403,9 @@ export default function FileView({
             onClick={() => {
               // 업로드 중일 때는 파일 열기 방지
               if (uploadQueue && uploadQueue.length > 0) {
-                toast.info("소스 추가/변환 중에는 파일을 열 수 없습니다.");
+                toast.info(
+                  "You cannot open files while adding/converting sources."
+                );
                 return;
               }
 
@@ -511,13 +513,13 @@ export default function FileView({
                         } else {
                           // 노드가 없을 때 toast 메시지 표시
                           toast.info(
-                            `그래프에 "${f.name}" 파일의 노드가 없습니다.`
+                            `No nodes found in the graph for "${f.name}".`
                           );
                         }
                       } catch (err) {
                         console.error("노드 조회 실패:", err);
                         toast.error(
-                          "해당 소스에서 생성된 노드를 가져오지 못했습니다."
+                          "Failed to fetch nodes generated from this source."
                         );
                       } finally {
                         // 로딩 상태 해제
@@ -527,7 +529,7 @@ export default function FileView({
                     }}
                   >
                     <AiOutlineNodeIndex size={17} style={{ marginRight: 1 }} />
-                    노드 보기
+                    View nodes
                     {isNodeViewLoading === f.id && (
                       <span
                         className="upload-status"
@@ -551,8 +553,8 @@ export default function FileView({
                       setMenuOpenId(null);
                     }}
                   >
-                    <GoPencil size={14} style={{ marginRight: 4 }} /> 소스 이름
-                    바꾸기
+                    <GoPencil size={14} style={{ marginRight: 4 }} />
+                    Rename source
                   </div>
 
                   {/* 소스 삭제 메뉴 */}
@@ -564,7 +566,7 @@ export default function FileView({
                       size={14}
                       style={{ marginRight: 4 }}
                     />{" "}
-                    소스 삭제
+                    Delete source
                   </div>
                 </div>
               )}
@@ -579,10 +581,10 @@ export default function FileView({
         uploadQueue.length === 0 && (
           <div className="empty-state">
             <p className="empty-sub">
-              이 영역에 파일을 <strong>드래그해서 추가</strong>해보세요!
+              <strong>Drag files here</strong> to add them!
             </p>
             <div className="supported-formats">
-              <p className="format-title">지원하는 파일 형식</p>
+              <p className="format-title">Supported formats</p>
               <div className="format-list">
                 <span className="format-item">PDF</span>
                 <span className="format-item">TXT</span>
@@ -598,14 +600,14 @@ export default function FileView({
         processedFiles.length === 0 &&
         uploadQueue.length === 0 && (
           <div className="empty-state">
-            <p className="empty-sub">검색 결과가 없습니다.</p>
+            <p className="empty-sub">No search results.</p>
           </div>
         )}
 
       {/* 삭제 확인 모달 */}
       {fileToDelete && (
         <ConfirmDialog
-          message={`"${fileToDelete.name}" 소스를 삭제하시겠습니까?`}
+          message={`Delete source "${fileToDelete.name}"?`}
           onCancel={() => {
             if (!isDeleting) setFileToDelete(null);
           }}
