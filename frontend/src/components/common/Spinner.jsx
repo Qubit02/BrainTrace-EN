@@ -29,7 +29,7 @@ export default function Spinner() {
       {/* 회전 로딩 아이콘 */}
       <AiOutlineLoading3Quarters className="spinner-react-icon" />
       {/* 진행 중 문구 + 점 애니메이션 */}
-      <div className="spinner-brain-text">프로젝트 로딩중{dots}</div>
+      <div className="spinner-brain-text">Loading project{dots}</div>
     </div>
   );
 }

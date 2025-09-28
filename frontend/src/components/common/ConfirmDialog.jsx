@@ -34,14 +34,14 @@ export default function ConfirmDialog({ message, onOk, onCancel, isLoading }) {
             onClick={onCancel}
             disabled={isLoading}
           >
-            취소
+            Cancel
           </button>
           <button
             className="delete-button danger"
             onClick={onOk}
             disabled={isLoading}
           >
-            {isLoading ? "삭제 중..." : "삭제"}
+            {isLoading ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>

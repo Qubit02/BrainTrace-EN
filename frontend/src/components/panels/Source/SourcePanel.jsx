@@ -473,10 +473,10 @@ export default function SourcePanel({
       {!collapsed && (
         <>
           <div>
-            {/* 소스가 열려있지 않을 때만 표시 */}
+            {/* Only show when a source is not opened */}
             {!openedFile && (
               <div className="action-buttons">
-                {/* 소스 추가 버튼 (아이콘/텍스트 토글) */}
+                {/* Add Source button (icon/text toggles) */}
                 <button
                   className={`pill-button ${
                     panelWidth < RESPONSIVE_THRESHOLDS.SOURCE ? "icon-only" : ""
@@ -504,12 +504,12 @@ export default function SourcePanel({
                           verticalAlign: "middle",
                         }}
                       >
-                        소스
+                        Source
                       </span>
                     </>
                   )}
                 </button>
-                {/* 탐색 버튼 (panelWidth < 250이면 아이콘만, 아니면 아이콘+텍스트) */}
+                {/* Search button (icon-only under small width) */}
                 <button
                   className={`pill-button${showSearchInput ? " active" : ""} ${
                     panelWidth < RESPONSIVE_THRESHOLDS.SEARCH ? "icon-only" : ""
@@ -535,7 +535,7 @@ export default function SourcePanel({
                           verticalAlign: "middle",
                         }}
                       >
-                        탐색
+                        Search
                       </span>
                     </>
                   )}
@@ -544,7 +544,7 @@ export default function SourcePanel({
             )}
           </div>
 
-          {/* 검색창 표시 여부에 따라 입력창 렌더링 */}
+          {/* Render search input when visible */}
           {showSearchInput && (
             <form
               onSubmit={handleSearchSubmit}
@@ -554,7 +554,7 @@ export default function SourcePanel({
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="설명이나 키워드를 입력하세요"
+                placeholder="Enter description or keywords"
                 value={searchText}
                 onChange={handleSearchTextChange}
                 style={{
@@ -576,7 +576,7 @@ export default function SourcePanel({
             style={{ flexGrow: 1, overflow: "auto" }}
           >
             {openedFile ? (
-              // 모든 파일 타입을 GenericViewer로 통합 처리
+              // Unified GenericViewer for all file types
               <div className="pdf-viewer-wrapper" style={{ height: "100%" }}>
                 <GenericViewer
                   type={openedFile.type}
@@ -642,7 +642,7 @@ export default function SourcePanel({
         </>
       )}
 
-      {/* KnowledgeGraphStatusBar: 소스가 열려있지 않을 때만 표시 */}
+      {/* KnowledgeGraphStatusBar: show only when no source is opened */}
       {!collapsed && !openedFile && (
         <KnowledgeGraphStatusBar
           textLength={dataMetrics.textLength}

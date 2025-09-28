@@ -314,7 +314,7 @@ function GraphViewForFullscreen(props) {
                 <input
                   id="fullscreen-node-search"
                   type="text"
-                  placeholder="노드 검색"
+                  placeholder="Search nodes"
                   value={searchQuery}
                   onChange={handleSearchInput}
                   className="fullscreen-search-input"
@@ -323,7 +323,7 @@ function GraphViewForFullscreen(props) {
                   <button
                     onClick={clearSearch}
                     className="fullscreen-clear-search-btn"
-                    title="검색 초기화"
+                    title="Clear search"
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -340,7 +340,7 @@ function GraphViewForFullscreen(props) {
                     localReferencedNodes.length > 0 ? "search-found" : ""
                   }`}
                 >
-                  {localReferencedNodes.length}개 노드 발견
+                  {localReferencedNodes.length} node(s) found
                 </div>
               )}
             </div>
@@ -350,7 +350,7 @@ function GraphViewForFullscreen(props) {
             <button
               onClick={toggleDarkMode}
               className="fullscreen-control-btn darkmode-toggle"
-              title={`${isDarkMode ? "라이트" : "다크"}모드`}
+              title={`${isDarkMode ? "Light" : "Dark"} mode`}
             >
               <span className="fullscreen-btn-icon">
                 {isDarkMode ? (
@@ -359,7 +359,7 @@ function GraphViewForFullscreen(props) {
                   <FiMoon color={ICON_COLOR} />
                 )}
               </span>
-              <span className="btn-text">{isDarkMode ? "라이트" : "다크"}</span>
+              <span className="btn-text">{isDarkMode ? "Light" : "Dark"}</span>
             </button>
 
             <button
@@ -367,12 +367,12 @@ function GraphViewForFullscreen(props) {
               className={`fullscreen-control-btn advanced-toggle ${
                 showAdvancedControls ? "active" : ""
               }`}
-              title="설정 컨트롤 토글"
+              title="Toggle settings panel"
             >
               <span className="fullscreen-btn-icon">
                 <FiSettings color={ICON_COLOR} />
               </span>
-              <span className="btn-text">설정</span>
+              <span className="btn-text">Settings</span>
             </button>
 
             <button
@@ -391,12 +391,12 @@ function GraphViewForFullscreen(props) {
                 }
               }}
               className="fullscreen-control-btn refresh-btn"
-              title="그래프 새로고침"
+              title="Refresh graph"
             >
               <span className="fullscreen-btn-icon">
                 <FiRefreshCw color={ICON_COLOR} />
               </span>
-              <span className="btn-text">새로고침</span>
+              <span className="btn-text">Refresh</span>
             </button>
 
             {(localReferencedNodes.length > 0 ||
@@ -405,12 +405,12 @@ function GraphViewForFullscreen(props) {
               <button
                 onClick={clearSearch}
                 className="fullscreen-control-btn fullscreen-clear-btn"
-                title="하이라이트 해제"
+                title="Clear highlight"
               >
                 <span className="fullscreen-btn-icon">
                   <FiX color={ICON_COLOR} />
                 </span>
-                <span className="btn-text">해제</span>
+                <span className="btn-text">Clear</span>
               </button>
             )}
           </div>
@@ -438,7 +438,7 @@ function GraphViewForFullscreen(props) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="fullscreen-panel-header">
-                <h4>그래프 설정</h4>
+                <h4>Graph settings</h4>
                 <button
                   onClick={() => setShowAdvancedControls(false)}
                   className="fullscreen-close-panel-btn"
@@ -448,22 +448,22 @@ function GraphViewForFullscreen(props) {
               </div>
               <div className="fullscreen-panel-content">
                 <div className="fullscreen-control-group">
-                  <label>그래프 통계</label>
+                  <label>Graph stats</label>
                   <div className="fullscreen-stats-grid">
                     <div className="fullscreen-stat-item">
-                      <span className="fullscreen-stat-label">노드</span>
+                      <span className="fullscreen-stat-label">Nodes</span>
                       <span className="fullscreen-stat-value">
                         {graphStats.nodes}
                       </span>
                     </div>
                     <div className="fullscreen-stat-item">
-                      <span className="fullscreen-stat-label">연결</span>
+                      <span className="fullscreen-stat-label">Links</span>
                       <span className="fullscreen-stat-value">
                         {graphStats.links}
                       </span>
                     </div>
                     <div className="fullscreen-stat-item">
-                      <span className="fullscreen-stat-label">하이라이트</span>
+                      <span className="fullscreen-stat-label">Highlights</span>
                       <span className="fullscreen-stat-value">
                         {localReferencedNodes.length}
                       </span>
@@ -473,11 +473,11 @@ function GraphViewForFullscreen(props) {
 
                 {/* 표시 설정 */}
                 <div className="fullscreen-control-group">
-                  <label>표시 설정</label>
+                  <label>Display</label>
                   <div className="fullscreen-slider-container">
                     {/* 노드 크기 */}
                     <div className="fullscreen-slider-item">
-                      <span className="fullscreen-slider-label">노드 크기</span>
+                      <span className="fullscreen-slider-label">Node size</span>
                       <input
                         type="range"
                         min="3"
@@ -499,7 +499,9 @@ function GraphViewForFullscreen(props) {
 
                     {/* 링크 두께 */}
                     <div className="fullscreen-slider-item">
-                      <span className="fullscreen-slider-label">링크 두께</span>
+                      <span className="fullscreen-slider-label">
+                        Link width
+                      </span>
                       <input
                         type="range"
                         min="0.5"
@@ -522,7 +524,7 @@ function GraphViewForFullscreen(props) {
                     {/* 텍스트 투명도 */}
                     <div className="fullscreen-slider-item">
                       <span className="fullscreen-slider-label">
-                        텍스트 투명도
+                        Text opacity
                       </span>
                       <input
                         type="range"
@@ -548,11 +550,11 @@ function GraphViewForFullscreen(props) {
 
                 {/* 3개 물리 설정 */}
                 <div className="fullscreen-control-group">
-                  <label>물리 설정</label>
+                  <label>Physics</label>
                   <div className="fullscreen-slider-container">
                     {/* 반발력 */}
                     <div className="fullscreen-slider-item">
-                      <span className="fullscreen-slider-label">반발력</span>
+                      <span className="fullscreen-slider-label">Repel</span>
                       <input
                         type="range"
                         min="0"
@@ -574,7 +576,9 @@ function GraphViewForFullscreen(props) {
 
                     {/* 링크 거리 */}
                     <div className="fullscreen-slider-item">
-                      <span className="fullscreen-slider-label">링크 거리</span>
+                      <span className="fullscreen-slider-label">
+                        Link distance
+                      </span>
                       <input
                         type="range"
                         min="0"
@@ -596,7 +600,9 @@ function GraphViewForFullscreen(props) {
 
                     {/* 링크 장력 */}
                     <div className="fullscreen-slider-item">
-                      <span className="fullscreen-slider-label">링크 장력</span>
+                      <span className="fullscreen-slider-label">
+                        Link strength
+                      </span>
                       <input
                         type="range"
                         min="0"
@@ -632,10 +638,10 @@ function GraphViewForFullscreen(props) {
                 </span>
                 <span className="fullscreen-status-text">
                   {props.focusNodeNames && props.focusNodeNames.length > 0
-                    ? "포커스"
+                    ? "Focus"
                     : newlyAddedNodes.length > 0
-                    ? "새로 추가"
-                    : "하이라이트"}
+                    ? "Newly added"
+                    : "Highlight"}
                   :
                   {(localReferencedNodes.length > 0
                     ? localReferencedNodes
@@ -647,12 +653,12 @@ function GraphViewForFullscreen(props) {
                     ? localReferencedNodes
                     : newlyAddedNodes
                   ).length > 3 &&
-                    ` 외 ${
+                    ` + ${
                       (localReferencedNodes.length > 0
                         ? localReferencedNodes
                         : newlyAddedNodes
                       ).length - 3
-                    }개`}
+                    } more`}
                 </span>
               </div>
             )}
@@ -661,13 +667,13 @@ function GraphViewForFullscreen(props) {
           <div className="fullscreen-status-right">
             <div className="fullscreen-keyboard-shortcuts">
               <span className="fullscreen-shortcut">Ctrl + +</span>
-              <span className="fullscreen-shortcut-desc">줌인</span>
+              <span className="fullscreen-shortcut-desc">Zoom in</span>
               <span className="fullscreen-shortcut">Ctrl + -</span>
-              <span className="fullscreen-shortcut-desc">줌아웃</span>
+              <span className="fullscreen-shortcut-desc">Zoom out</span>
               <span className="fullscreen-shortcut">Ctrl + K</span>
-              <span className="fullscreen-shortcut-desc">설정</span>
+              <span className="fullscreen-shortcut-desc">Settings</span>
               <span className="fullscreen-shortcut">ESC</span>
-              <span className="fullscreen-shortcut-desc">전체화면 종료</span>
+              <span className="fullscreen-shortcut-desc">Exit fullscreen</span>
             </div>
           </div>
         </div>

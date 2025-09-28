@@ -107,16 +107,16 @@ const TitleEditor = ({
   // brain 테이블의 deployment_type 필드로 환경 정보 판단
   const getEnvironmentInfo = () => {
     if (!brainInfo || !brainInfo.deployment_type) {
-      return { type: "unknown", label: "알 수 없음", icon: "FaCloud" };
+      return { type: "unknown", label: "Unknown", icon: "FaCloud" };
     }
 
     // deployment_type이 'local'인 경우 로컬 모드
     if (brainInfo.deployment_type === "local") {
-      return { type: "local", label: "로컬 모드", icon: "MdSecurity" };
+      return { type: "local", label: "Local mode", icon: "MdSecurity" };
     }
 
     // 그 외의 경우 클라우드 모드
-    return { type: "cloud", label: "클라우드 모드", icon: "FaCloud" };
+    return { type: "cloud", label: "Cloud mode", icon: "FaCloud" };
   };
 
   const environmentInfo = getEnvironmentInfo();
@@ -154,14 +154,14 @@ const TitleEditor = ({
             cursor: "pointer",
           }}
           onClick={handleEditTitleStart}
-          title="클릭하여 제목 편집"
+          title="Click to edit title"
         >
           {sessionName || "Untitled"}
         </span>
         <button
           className="chat-panel-edit-title-btn"
           onClick={handleEditTitleStart}
-          title="제목 편집"
+          title="Edit title"
         >
           <GoPencil size={16} />
         </button>
@@ -169,7 +169,7 @@ const TitleEditor = ({
           <button
             className="chat-panel-refresh-btn"
             onClick={onRefreshClick}
-            title="대화 초기화"
+            title="Clear chat"
           >
             <WiCloudRefresh size={30} color="black" />
           </button>
@@ -224,7 +224,7 @@ const ModelDropdown = ({
         onClick={() => setShowModelDropdown(!showModelDropdown)}
       >
         <span className="chat-panel-model-value-inline">
-          {selectedModel || "모델을 선택하세요"}
+          {selectedModel || "Select a model"}
         </span>
         <IoChevronDown
           size={14}
@@ -304,7 +304,7 @@ const ModelDropdown = ({
                 )}
                 {installingModel === model && (
                   <span className="chat-panel-installing-inline">
-                    설치 중...
+                    Installing...
                   </span>
                 )}
               </div>
@@ -342,15 +342,13 @@ const ModelDropdown = ({
                 className={`chat-panel-model-item-inline unselectable ${
                   selectedModel === model ? "selected" : ""
                 }`}
-                title="설치 후 사용 가능합니다"
+                title="Available after installation"
                 onClick={(e) => {
                   // 설치되지 않은 모델은 선택할 수 없음
                   e.preventDefault();
                   e.stopPropagation();
                   // 선택 불가능하다는 안내 메시지
-                  alert(
-                    `${modelData.name} 모델을 사용하려면 먼저 설치해주세요.`
-                  );
+                  alert(`Please install ${modelData.name} before use.`);
                 }}
               >
                 <div className="chat-panel-model-info-inline">
@@ -398,7 +396,7 @@ const ModelDropdown = ({
                 )}
                 {installingModel === model ? (
                   <span className="chat-panel-installing-inline">
-                    다운로드 중...
+                    Downloading...
                   </span>
                 ) : (
                   !isInstalled && (
@@ -409,7 +407,7 @@ const ModelDropdown = ({
                         handleInstallModel(model);
                       }}
                     >
-                      설치
+                      Install
                     </button>
                   )
                 )}
@@ -466,7 +464,7 @@ const ChatInput = ({
       <div className="chat-panel-input-with-button">
         <textarea
           className="chat-panel-input"
-          placeholder="무엇이든 물어보세요"
+          placeholder="Ask anything"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={(e) => {
@@ -479,7 +477,9 @@ const ChatInput = ({
           }}
           disabled={isLoading}
         />
-        <div className="chat-panel-source-count-text">소스 {sourceCount}개</div>
+        <div className="chat-panel-source-count-text">
+          {sourceCount} sources
+        </div>
         <ModelDropdown
           selectedModel={selectedModel}
           availableModels={availableModels}
@@ -493,7 +493,7 @@ const ChatInput = ({
         <button
           type="submit"
           className="chat-panel-submit-circle-button"
-          aria-label="메시지 전송"
+          aria-label="Send message"
           disabled={!inputText.trim() || !selectedModel || isLoading}
         >
           <span className="chat-panel-send-icon">➤</span>
@@ -582,7 +582,7 @@ const ChatMessage = ({
                             marginRight: "2px",
                           }}
                         />
-                        <span>출처보기</span>
+                        <span>View sources</span>
                       </button>
                     </div>
                     {/* 출처 목록 표시 */}
@@ -635,7 +635,7 @@ const ChatMessage = ({
         <div className="chat-panel-message-actions">
           <button
             className="chat-panel-copy-button"
-            title="복사"
+            title="Copy"
             onClick={() => handleCopyMessage(message)}
           >
             {copiedMessageId === (message.chat_id || message.message) ? (
@@ -648,7 +648,7 @@ const ChatMessage = ({
           {message.is_ai && (
             <button
               className="chat-panel-graph-button"
-              title="그래프 보기"
+              title="View graph"
               onClick={async () => {
                 if (!message.chat_id) return;
                 try {
@@ -674,7 +674,7 @@ const ChatMessage = ({
           message.accuracy !== undefined &&
           !message.message.includes("지식그래프에 해당 정보가 없습니다") && (
             <div className="chat-panel-accuracy-display">
-              <span className="chat-panel-accuracy-label">정확도:</span>
+              <span className="chat-panel-accuracy-label">Accuracy:</span>
               <span
                 className="chat-panel-accuracy-value"
                 data-accuracy={
@@ -699,7 +699,7 @@ const ChatMessage = ({
               style={{ flexDirection: "column", alignItems: "flex-start" }}
             >
               <span className="chat-panel-accuracy-label">
-                💡 추가 정보가 필요합니다
+                💡 Additional information required
               </span>
               <span
                 className="chat-panel-accuracy-value"
@@ -712,10 +712,11 @@ const ChatMessage = ({
                   marginTop: "8px",
                 }}
               >
-                첨부하신 소스를 기반으로 답변했지만, 질문과 관련된 정보가
-                부족합니다.
-                <br />더 구체적인 질문을 해주시거나, 다른 소스를 추가해주시면 더
-                정확한 답변을 드릴 수 있습니다.
+                The answer was based on your attached sources, but relevant
+                information seems insufficient.
+                <br />
+                Please ask a more specific question or add other sources for a
+                more accurate response.
               </span>
             </div>
           )}
@@ -735,7 +736,7 @@ const ChatMessage = ({
  *
  * @param {string} message - 표시할 로딩 메시지 (기본값: "생각하는 중")
  */
-const LoadingIndicator = ({ message = "생각하는 중" }) => (
+const LoadingIndicator = ({ message = "Thinking..." }) => (
   <div className="chat-panel-thinking-indicator">
     <span>{message}</span>
     <div className="chat-panel-thinking-dots">
@@ -1062,17 +1063,17 @@ function ChatPanel({
       await loadModels();
 
       // 성공 메시지 표시
-      alert(`${modelName} 모델이 성공적으로 설치되었습니다.`);
+      alert(`${modelName} installed successfully.`);
     } catch (error) {
       console.error("모델 설치 실패:", error);
 
       // 타임아웃 에러인 경우 특별 처리
       if (error.response?.status === 408) {
         alert(
-          `${modelName} 모델 다운로드가 시간 초과되었습니다. 네트워크 상태를 확인하고 다시 시도해주세요.`
+          `${modelName} download timed out. Please check your network and try again.`
         );
       } else {
-        alert(`모델 설치에 실패했습니다: ${error.message}`);
+        alert(`Model installation failed: ${error.message}`);
       }
     } finally {
       setInstallingModel(null);
@@ -1117,7 +1118,7 @@ function ChatPanel({
         console.log("세션 이름 수정 완료:", selectedSessionId, finalTitle);
       } catch (error) {
         console.error("세션 이름 수정 실패:", error);
-        alert("세션 이름 수정에 실패했습니다.");
+        alert("Failed to rename session.");
       }
     }
     setIsEditingTitle(false);
@@ -1144,14 +1145,14 @@ function ChatPanel({
 
     // 모델 선택 검증 추가
     if (!selectedModel || selectedModel.trim() === "") {
-      alert("사용할 모델을 선택해주세요.");
+      alert("Please select a model.");
       return;
     }
 
     // 세션 ID 유효성 검증 추가
     if (!selectedSessionId || selectedSessionId <= 0) {
       console.error("❌ 유효하지 않은 세션 ID:", selectedSessionId);
-      alert("유효하지 않은 세션입니다. 세션을 다시 선택해주세요.");
+      alert("Invalid session. Please select again.");
       return;
     }
 
@@ -1266,13 +1267,13 @@ function ChatPanel({
       console.error("답변 생성 중 오류:", err);
 
       // 더 구체적인 에러 메시지 제공
-      let errorMessage = "답변 생성 중 오류가 발생했습니다.";
+      let errorMessage = "An error occurred while generating the answer.";
       if (err.response?.status === 400) {
-        errorMessage = "잘못된 요청입니다. 입력을 확인해주세요.";
+        errorMessage = "Bad request. Please check your input.";
       } else if (err.response?.status === 500) {
-        errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+        errorMessage = "Server error. Please try again later.";
       } else if (err.code === "NETWORK_ERROR") {
-        errorMessage = "네트워크 연결을 확인해주세요.";
+        errorMessage = "Please check your network connection.";
       }
       alert(errorMessage);
     } finally {
@@ -1291,7 +1292,7 @@ function ChatPanel({
       const updated = await fetchChatHistoryBySession(selectedSessionId);
       setChatHistory(updated);
     } catch (e) {
-      alert("대화 삭제 중 오류가 발생했습니다.");
+      alert("An error occurred while deleting the conversation.");
       console.error(e);
     } finally {
       setShowConfirm(false);
@@ -1367,7 +1368,7 @@ function ChatPanel({
     } catch (err) {
       console.error("복사 실패:", err);
       // 복사 실패 시 사용자에게 알림
-      alert("메시지 복사에 실패했습니다.");
+      alert("Failed to copy message.");
     }
   };
 
@@ -1409,7 +1410,7 @@ function ChatPanel({
           <button
             className="chat-panel-menu-btn"
             onClick={onBackToList}
-            title="메뉴"
+            title="Menu"
           >
             <HiOutlineBars4 size={22} color="#303030ff" />
           </button>
@@ -1417,7 +1418,7 @@ function ChatPanel({
       </div>
       {isInitialLoading ? (
         <div className="chat-panel-initial-loading">
-          <LoadingIndicator message="채팅 내역을 불러오는 중..." />
+          <LoadingIndicator message="Loading chat history..." />
         </div>
       ) : hasChatStarted ? (
         <div className="chat-panel-content">
@@ -1480,14 +1481,14 @@ function ChatPanel({
           <div className="chat-panel-centered-input-container">
             <div className="chat-panel-hero-section">
               <h1 className="chat-panel-hero-title">
-                지식 그래프와 대화하여 인사이트를 발견하세요.
+                Chat with your knowledge graph to discover insights.
               </h1>
             </div>
             <form className="chat-panel-input-wrapper" onSubmit={handleSubmit}>
               <div className="chat-panel-input-with-button rounded">
                 <textarea
                   className="chat-panel-input"
-                  placeholder="무엇이든 물어보세요"
+                  placeholder="Ask anything"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => {
@@ -1500,7 +1501,7 @@ function ChatPanel({
                   }}
                 />
                 <div className="chat-panel-source-count-text">
-                  소스 {sourceCount}개
+                  {sourceCount} sources
                 </div>
                 <ModelDropdown
                   selectedModel={selectedModel}
@@ -1515,7 +1516,7 @@ function ChatPanel({
                 <button
                   type="submit"
                   className="chat-panel-submit-circle-button"
-                  aria-label="메시지 전송"
+                  aria-label="Send message"
                   disabled={!inputText.trim() || !selectedModel || isLoading}
                 >
                   <span className="chat-panel-send-icon">➤</span>
@@ -1527,12 +1528,13 @@ function ChatPanel({
       )}
       {/* 안내 문구 */}
       <p className="chat-panel-disclaimer">
-        BrainTrace는 학습된 정보 기반으로 응답하며, 실제와 다를 수 있습니다.
+        BrainTrace responds based on learned information and may differ from
+        reality.
       </p>
       {/* 대화 초기화 확인 다이얼로그 */}
       {showConfirm && (
         <ConfirmDialog
-          message="채팅 기록을 모두 삭제하시겠습니까?"
+          message="Delete all chat history?"
           onOk={handleClearChat}
           onCancel={() => setShowConfirm(false)}
         />

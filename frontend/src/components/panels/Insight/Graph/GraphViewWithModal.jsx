@@ -225,7 +225,7 @@ export default function GraphViewWithModal({
           <button
             className={`graph-search-toggle-btn${showSearch ? " active" : ""}`}
             onClick={() => setShowSearch((v) => !v)}
-            title="노드 검색"
+            title="Search nodes"
           >
             <MdOutlineSearch size={21} color="#222" />
           </button>
@@ -233,7 +233,7 @@ export default function GraphViewWithModal({
           <div
             className="timelapse-button"
             onClick={handleTimelapse}
-            title="애니메이션"
+            title="Animation"
           >
             <PiMagicWand size={21} color="black" />
           </div>
@@ -242,7 +242,7 @@ export default function GraphViewWithModal({
         {/* 전체화면 버튼 */}
         <button className="fullscreen-btn" onClick={openExternalGraphWindow}>
           {!isFullscreen && (
-            <MdFullscreen size={22} color="black" title="전체화면" />
+            <MdFullscreen size={22} color="black" title="Fullscreen" />
           )}
         </button>
       </div>

@@ -457,7 +457,7 @@ export default function GenericViewer({
       >
         <div className="viewer-loading">
           <div className="loading-spinner"></div>
-          <p>파일을 불러오는 중...</p>
+          <p>Loading file...</p>
         </div>
       </div>
     );
@@ -474,7 +474,7 @@ export default function GenericViewer({
         <FaArrowLeftLong
           onClick={onBack}
           className={`viewer-back-button ${type === "md" ? "md" : ""}`}
-          title="뒤로 가기"
+          title="Go back"
         />
 
         {/* 제목을 헤더 가운데에 표시 */}
@@ -486,12 +486,12 @@ export default function GenericViewer({
           <FaMinus
             className="viewer-button"
             onClick={decreaseFontSize}
-            title="글꼴 크기 줄이기"
+            title="Decrease font size"
           />
           <FaPlus
             className="viewer-button"
             onClick={increaseFontSize}
-            title="글꼴 크기 늘리기"
+            title="Increase font size"
           />
           <span className="viewer-fontsize">{fontSize}px</span>
           {/* 출처보기가 아닌 경우에만 하이라이트 초기화 버튼 표시 */}
@@ -499,7 +499,7 @@ export default function GenericViewer({
             <TbRefresh
               className="viewer-button"
               onClick={clearHighlights}
-              title="하이라이트 모두 지우기"
+              title="Clear all highlights"
             />
           )}
         </div>
@@ -512,8 +512,8 @@ export default function GenericViewer({
           <div className="source-view-notice">
             <MdOutlineSource className="source-view-notice-icon" />
             <span className="source-view-notice-text">
-              이 소스는 <strong>출처보기</strong>를 통해 열렸습니다.
-              하이라이트된 부분이 답변의 근거가 되는 내용입니다.
+              This source was opened via <strong>View sources</strong>. The
+              highlighted parts are the basis for the answer.
             </span>
           </div>
         )}
@@ -521,7 +521,7 @@ export default function GenericViewer({
         {/* 오류 메시지 표시 */}
         {error && (
           <div className="viewer-error">
-            <p>파일을 불러오는 중 오류가 발생했습니다: {error}</p>
+            <p>An error occurred while loading the file: {error}</p>
           </div>
         )}
 
