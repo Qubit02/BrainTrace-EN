@@ -41,17 +41,12 @@ os.makedirs(QDRANT_PATH, exist_ok=True)
 # Qdrant 클라이언트 생성 (로컬 디스크 모드)
 client = QdrantClient(path=QDRANT_PATH)
 
-# KoE5 임베딩 모델 로드
-MODEL_NAME = "nlpai-lab/KoE5"
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModel.from_pretrained(MODEL_NAME)
 
 # 영어 임베딩 모델
-model.eval()
 eng_model = SentenceTransformer("all-MiniLM-L6-v2")  
 
 # 모델의 hidden size를 벡터 차원으로 사용
-EMBED_DIM = model.config.hidden_size  # 예: 1024
+EMBED_DIM = eng_model.get_sentence_embedding_dimension()
 
 
 def get_collection_name(brain_id: str) -> str:
@@ -103,7 +98,7 @@ def initialize_collection(brain_id: str) -> None:
 
 def encode_text(text: str) -> List[float]:
     """
-    주어진 텍스트를 KoE5 모델로 임베딩하여 벡터 반환
+    주어진 텍스트를 SentenceTransformer 모델로 임베딩하여 벡터 반환
     - 토크나이저로 입력 전처리
     - CLS 토큰 임베딩 추출
     Args:
@@ -117,11 +112,8 @@ def encode_text(text: str) -> List[float]:
         - 배치 추론을 고려하면 처리량이 증가하지만, 여기서는 단일 텍스트 기준으로 구현되어 있습니다.
     """
     try:
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-        with torch.no_grad():
-            outputs = model(**inputs)
-        # CLS 토큰 인덱스(0) 임베딩 반환
-        return outputs.last_hidden_state[:, 0].squeeze().tolist()
+        embedding = eng_model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
+        return embedding.tolist()
     except Exception as e:
         logging.error("텍스트 임베딩 생성 실패: %s", str(e))
         raise RuntimeError(f"텍스트 임베딩 생성 실패: {str(e)}")
@@ -129,7 +121,7 @@ def encode_text(text: str) -> List[float]:
 
 def get_embeddings_batch(texts: List[str]) -> np.ndarray:
     lang, _ =langid.classify("".join(texts))
-
+    """
     if lang == "ko":
         inputs = tokenizer(
             texts, return_tensors="pt", padding=True, truncation=True, max_length=512
@@ -138,18 +130,19 @@ def get_embeddings_batch(texts: List[str]) -> np.ndarray:
             outputs = model(**inputs)
         cls_embeddings = outputs.last_hidden_state[:, 0, :]  # [CLS] 토큰 임베딩
         return cls_embeddings.cpu().numpy()
-    
-    elif lang == "en":
+    """
+    if lang == "en":
         embeddings = eng_model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
-        return embeddings
     
     else:
-        raise ValueError(f"지원하지 않는 언어 코드: {lang}")
+        logging.error(f"지원하지 않는 언어 코드: {lang}")
+        embeddings = eng_model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+
+    return embeddings
 
 def store_embeddings(node:dict, brain_id:str, embeddings:list):
 
     collection_name = get_collection_name(brain_id)
-    print(node)
     for idx, desc in enumerate(node["descriptions"]):
         description=desc["description"]
         source_id=node["source_id"]
@@ -501,7 +494,7 @@ def delete_collection(brain_id: str) -> None:
 
 def encode(text: str) -> List[float]:
         """
-        KoE5 모델을 이용해 텍스트를 임베딩합니다.
+        sentence transformer 모델을 이용해 텍스트를 임베딩합니다.
         Returns: EMBED_DIM 차원의 float 리스트
         """
         return encode_text(text)

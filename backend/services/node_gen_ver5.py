@@ -214,7 +214,7 @@ def make_edges(sentences:list[str], source_keyword:str, target_keywords:list[str
             for s_idx in source_idx:
                 if s_idx in target_idx:
                     relation+=sentences[s_idx]
-            relation="관련" if relation=="" else relation
+            relation="related" if relation=="" else relation
             edges.append({"source":source_keyword, 
                         "target":t,
                         "relation":relation})
@@ -262,10 +262,13 @@ def split_into_tokenized_sentence(text:str):
     """
 
     tokenized_sentences=[]
-    texts=[]
-    texts = [s.strip() for s in re.split(r'(?<=[.!?])\s+|(?<=[다요]\.)\s*', text.strip()) if s.strip()]
-    
-    print(f"texts:{texts}")
+    texts = [
+        s.strip()
+        for s in re.split(r'\.(?:[\[\]0-9\W]*)\s+', text.strip())
+        if s.strip()
+    ]
+
+
     for idx, sentence in enumerate(texts):
         lang=check_lang(sentence)
 
@@ -281,7 +284,7 @@ def split_into_tokenized_sentence(text:str):
             logging.error(f"한국어도 영어도 아닌 텍스트가 포함되어있습니다: {sentence}")
 
         tokenized_sentences.append({"tokens": tokens, "index": idx})
-
+    print(tokenized_sentences)
     return tokenized_sentences, texts
 
         

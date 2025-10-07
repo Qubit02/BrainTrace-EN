@@ -268,12 +268,15 @@ class OllamaAIService(BaseAIService):
             
             # 벡터DB에서 유사한 노드 검색 (threshold 0.7)
             # search_similar_nodes는 (nodes, score_avg) 튜플을 반환
+            
             similar_nodes, avg_score = embedding_service.search_similar_nodes(
                 embedding=response_embedding, 
                 brain_id=brain_id,
                 limit=20,  # limit 파라미터 사용 (top_k가 아님)
                 threshold=0.7  # threshold 명시
             )
+            
+            similar_nodes=None
             
             if not similar_nodes:
                 logging.info("답변과 유사한 노드를 찾지 못했습니다.")
@@ -322,17 +325,15 @@ class OllamaAIService(BaseAIService):
         - 스트리밍 비활성화, 타임아웃 지정
         """
         prompt = (
-            "다음 지식그래프 컨텍스트와 질문을 바탕으로, 컨텍스트에 명시된 정보나 연결된 관계를 통해 추론 가능한 범위 내에서만 자연어로 답변해줘. "
-            "정보가 일부라도 있다면 해당 범위 내에서 최대한 설명하고, 컨텍스트와 완전히 무관한 경우에만 '지식그래프에 해당 정보가 없습니다.'라고 출력해. "
-            "지식그래프 컨텍스트 형식:\n"
-            "1. [관계 목록] start_name -> relation_label -> end_name\n (모든 노드가 관계를 가지고 있는 것은 아님)"
-            "2. [노드 목록] NODE: {node_name} | DESCRIPTION: {desc_str}\n"
-            "지식그래프 컨텍스트:\n" + schema_text + "\n\n"
-            "질문: " + question + "\n\n"
-            "출력 형식:\n"
-            "[여기에 질문에 대한 상세 답변 작성 또는 '지식그래프에 해당 정보가 없습니다.' 출력]\n\n"
-            
-        )
+            "Please answer the question below in natural language, using only the information explicitly provided in the knowledge graph context or that can be reasonably inferred from the relationships. "
+            "If relevant information exists, explain it as fully as possible. If the context provides no relevant information, respond with: 'The knowledge graph does not contain this information.'"
+            "Knowledge Graph Context Format:\n"
+            "1. Relationships: start_name -> relation_label -> end_name\n"
+            "2. Nodes: NODE: {node_name} | DESCRIPTION: {desc_str}"
+            "Knowledge Graph Context:\n{schema_text}\n"
+            "Question: {question}\n"
+            "Output:\n[Provide a detailed answer based on the knowledge graph, or write 'The knowledge graph does not contain this information.']"
+            )
         try:
             print("debug", schema_text, question)
             resp = requests.post(
