@@ -807,7 +807,7 @@ function GraphView({
         processGraphData(data);
         setGraphReady(true);
       } catch (err) {
-        setError("그래프 데이터를 불러오는 데 실패했습니다.");
+        setError("Failed to load graph data.");
         setLoading(false);
         setGraphReady(false);
       }
@@ -854,8 +854,8 @@ function GraphView({
 
         processGraphData(data);
       } catch (err) {
-        console.error("그래프 새로고침 실패:", err);
-        setError("그래프 데이터를 불러오는 데 실패했습니다.");
+        console.error("Graph refresh failed:", err);
+        setError("Failed to load graph data.");
         setLoading(false);
       }
     };
@@ -1185,7 +1185,7 @@ function GraphView({
       graphData.nodes.length > 0 &&
       !graphData.nodes.some((n) => referencedSet.has(normalizeName(n.name)))
     ) {
-      toast.info("참고된 노드가 그래프에 없습니다.");
+      toast.info("Referenced nodes are not present in the graph.");
     }
   }, [showReferenced, referencedNodes, graphData.nodes, referencedSet]);
 
@@ -1363,12 +1363,12 @@ function GraphView({
         (isFullscreen ? (
           <div className={`graph-loading ${isDarkMode ? "dark" : "light"}`}>
             <div className="graph-loading-spinner"></div>
-            <div>그래프를 불러오는 중입니다...</div>
+            <div>Loading graph...</div>
           </div>
         ) : (
           <div className="graph-loading">
             <div className="graph-loading-text-animate">
-              그래프를 불러오는 중입니다
+              Loading graph
               <span className="dot-animate">
                 <span>.</span>
                 <span>.</span>

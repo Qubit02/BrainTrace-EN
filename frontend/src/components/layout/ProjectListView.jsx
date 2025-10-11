@@ -58,8 +58,8 @@ export default function ProjectListView() {
   const navigate = useNavigate();
 
   // ===== 상태 관리 =====
-  const [sortOption, setSortOption] = useState("최신 항목");
-  const [filterOption, setFilterOption] = useState("전체"); // 필터 옵션 추가
+  const [sortOption, setSortOption] = useState("Latest");
+  const [filterOption, setFilterOption] = useState("All"); // 필터 옵션 추가
   const [brains, setBrains] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -75,7 +75,7 @@ export default function ProjectListView() {
   const [showSortButton, setShowSortButton] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
 
-  const fullText = "지식을 연결하고, 아이디어를 확장하세요.";
+  const fullText = "Connect knowledge and expand your ideas.";
 
   // ===== 브레인 데이터 관리 =====
   const fetchBrains = () => {
@@ -146,32 +146,32 @@ export default function ProjectListView() {
     // 1. 필터링
     let filtered = [...brains];
     switch (filterOption) {
-      case "로컬":
+      case "Local":
         filtered = brains.filter((brain) => brain.deployment_type === "local");
         break;
-      case "클라우드":
+      case "Cloud":
         filtered = brains.filter((brain) => brain.deployment_type === "cloud");
         break;
-      default: // '전체'
+      default: // 'All'
         filtered = brains;
         break;
     }
 
     // 2. 정렬
     switch (sortOption) {
-      case "제목":
+      case "Title":
         filtered.sort((a, b) =>
           (a.brain_name || "").localeCompare(b.brain_name || "")
         );
         break;
-      case "소스 많은순":
+      case "Most sources":
         filtered.sort((a, b) => {
           const countA = sourceCounts[a.brain_id] || 0;
           const countB = sourceCounts[b.brain_id] || 0;
           return countB - countA; // 소스 많은순
         });
         break;
-      case "중요한 항목":
+      case "Important first":
         // 중요도가 설정된 프로젝트를 먼저 표시
         // 중요도가 같으면 최신순으로 정렬
         filtered.sort((a, b) => {
@@ -180,7 +180,7 @@ export default function ProjectListView() {
           return b.brain_id - a.brain_id; // 중요도가 같으면 최신순
         });
         break;
-      default: // '최신 항목'
+      default: // 'Latest'
         filtered.sort((a, b) => b.brain_id - a.brain_id);
         break;
     }
@@ -224,7 +224,7 @@ export default function ProjectListView() {
         prev.map((b) => (b.brain_id === brain.brain_id ? updated : b))
       );
     } catch {
-      alert("제목 수정 실패");
+      alert("Failed to update title");
     }
   }
 
@@ -252,7 +252,7 @@ export default function ProjectListView() {
       clearAllHighlightingData();
       setBrains((prev) => prev.filter((b) => b.brain_id !== confirmId));
     } catch {
-      alert("삭제 실패");
+      alert("Delete failed");
     }
     setIsDeleting(false);
     setConfirmId(null);
@@ -290,8 +290,8 @@ export default function ProjectListView() {
         prev.map((b) => (b.brain_id === brain.brain_id ? updatedBrain : b))
       );
     } catch (error) {
-      console.error("중요도 토글 실패:", error);
-      alert("중요도 변경에 실패했습니다.");
+      console.error("Failed to toggle importance:", error);
+      alert("Failed to change importance.");
     }
   };
 
@@ -328,9 +328,9 @@ export default function ProjectListView() {
           {/* 필터 탭 */}
           <div className="filter-tabs">
             {[
-              { key: "전체", label: "전체", icon: <BiWorld /> },
-              { key: "로컬", label: "로컬", icon: <BiLaptop /> },
-              { key: "클라우드", label: "클라우드", icon: <BiCloud /> },
+              { key: "All", label: "All", icon: <BiWorld /> },
+              { key: "Local", label: "Local", icon: <BiLaptop /> },
+              { key: "Cloud", label: "Cloud", icon: <BiCloud /> },
             ].map((option) => (
               <button
                 key={option.key}
@@ -352,7 +352,7 @@ export default function ProjectListView() {
               <IoIosArrowDown size={14} className="dropdown-arrow" />
             </button>
             <div className="sort-menu">
-              {["최신 항목", "제목", "소스 많은순", "중요한 항목"].map(
+              {["Latest", "Title", "Most sources", "Important first"].map(
                 (option) => (
                   <div
                     key={option}
@@ -371,52 +371,52 @@ export default function ProjectListView() {
         </div>
 
         {/* 필터 안내 메시지 */}
-        {filterOption === "전체" && showSortButton && (
+        {filterOption === "All" && showSortButton && (
           <div className="filter-info-message">
             <div className="info-icon">
               <BiWorld size={24} />
             </div>
             <div className="info-content">
-              <h3>모든 프로젝트</h3>
-              <p>로컬과 클라우드 프로젝트를 모두 확인할 수 있습니다.</p>
+              <h3>All projects</h3>
+              <p>You can check both local and cloud projects.</p>
               <ul>
-                <li>• 로컬: 보안 강화, 오프라인 사용</li>
-                <li>• 클라우드: 빠른 속도, 높은 정확도</li>
-                <li>• 상황에 맞게 선택하세요! (보안 vs 속도)</li>
+                <li>• Local: Enhanced security, offline use</li>
+                <li>• Cloud: Faster speed, higher accuracy</li>
+                <li>• Choose based on your needs! (Security vs Speed)</li>
               </ul>
             </div>
           </div>
         )}
 
-        {filterOption === "로컬" && showSortButton && (
+        {filterOption === "Local" && showSortButton && (
           <div className="filter-info-message">
             <div className="info-icon">
               <BiLaptop size={24} />
             </div>
             <div className="info-content">
-              <h3>로컬 프로젝트</h3>
-              <p>데이터가 내 컴퓨터에서 처리되어 보안이 강화됩니다.</p>
+              <h3>Local projects</h3>
+              <p>Data is processed locally for enhanced security.</p>
               <ul>
-                <li>• 오프라인에서도 사용 가능</li>
-                <li>• 데이터가 외부로 전송되지 않음</li>
-                <li>• 개인정보 보호 강화</li>
+                <li>• Available offline</li>
+                <li>• Data is not transmitted externally</li>
+                <li>• Enhanced personal data protection</li>
               </ul>
             </div>
           </div>
         )}
 
-        {filterOption === "클라우드" && showSortButton && (
+        {filterOption === "Cloud" && showSortButton && (
           <div className="filter-info-message">
             <div className="info-icon">
               <BiCloud size={24} />
             </div>
             <div className="info-content">
-              <h3>클라우드 프로젝트</h3>
-              <p>인터넷을 통해 강력한 AI 모델을 사용합니다.</p>
+              <h3>Cloud projects</h3>
+              <p>Uses powerful AI models over the internet.</p>
               <ul>
-                <li>• 빠른 응답 속도</li>
-                <li>• 높은 정확도</li>
-                <li>• 최신 AI 모델 사용</li>
+                <li>• Fast response speed</li>
+                <li>• High accuracy</li>
+                <li>• Uses latest AI models</li>
               </ul>
             </div>
           </div>
@@ -448,12 +448,12 @@ export default function ProjectListView() {
             >
               {/* 프로젝트 아이콘 */}
               <div className="project-icon">
-                <img width={30} src="/brainnormal.png" alt="프로젝트 아이콘" />
+                <img width={30} src="/brainnormal.png" alt="Project icon" />
                 {/* 배포 타입 표시 */}
                 <div className="deployment-badge">
                   {project.deployment_type === "local" ? (
                     <>
-                      로컬
+                      Local
                       <MdSecurity
                         size={12}
                         style={{
@@ -465,7 +465,7 @@ export default function ProjectListView() {
                       />
                     </>
                   ) : (
-                    "클라우드"
+                    "Cloud"
                   )}
                 </div>
               </div>
@@ -528,9 +528,9 @@ export default function ProjectListView() {
 
               {/* 생성일자 및 소스 개수 */}
               <div className="project-date">
-                <span>{project.created_at ?? "날짜 없음"}</span>
+                <span>{project.created_at ?? "No date"}</span>
                 <span className="source-count">
-                  (소스 {sourceCounts[project.brain_id] ?? 0}개)
+                  ({sourceCounts[project.brain_id] ?? 0} sources)
                 </span>
               </div>
 
@@ -555,7 +555,7 @@ export default function ProjectListView() {
                       onClick={() => startEditing(project)}
                     >
                       <GoPencil size={14} />
-                      제목 수정
+                      Edit title
                     </div>
                     <div
                       className="popup-item"
@@ -565,7 +565,7 @@ export default function ProjectListView() {
                       }}
                     >
                       <RiDeleteBinLine size={14} />
-                      삭제
+                      Delete
                     </div>
                   </div>
                 )}
@@ -581,7 +581,7 @@ export default function ProjectListView() {
           >
             <div className="add-card-content">
               <FaPlus size={26} />
-              <span>새 프로젝트</span>
+              <span>New project</span>
             </div>
           </div>
         </div>
@@ -592,7 +592,7 @@ export default function ProjectListView() {
       {/* 삭제 확인 다이얼로그 */}
       {confirmId !== null && (
         <ConfirmDialog
-          message="이 프로젝트를 삭제하시겠습니까?"
+          message="Delete this project?"
           onCancel={() => {
             if (!isDeleting) setConfirmId(null);
           }}

@@ -69,7 +69,7 @@ export default function NewBrainModal({ onClose, onCreated }) {
       onClose();
     } catch (err) {
       // 에러 메시지 출력
-      alert(err.response?.data?.detail ?? "생성 실패");
+      alert(err.response?.data?.detail ?? "Creation failed");
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export default function NewBrainModal({ onClose, onCreated }) {
     <div className="modal-back">
       <form className="modal-box" onSubmit={handleSubmit}>
         <div className="modal-header">
-          <h3>새 프로젝트 만들기</h3>
+          <h3>Create new project</h3>
           <button type="button" onClick={onClose} className="close-button">
             ✕
           </button>
@@ -87,7 +87,7 @@ export default function NewBrainModal({ onClose, onCreated }) {
 
         {/* 구동 환경 선택 */}
         <div className="deployment-type-section">
-          <h4>구동 환경 선택</h4>
+          <h4>Select runtime environment</h4>
           <div className="deployment-options">
             <div
               className={`deployment-option ${
@@ -99,12 +99,12 @@ export default function NewBrainModal({ onClose, onCreated }) {
                 <FaCloud size={24} color="#4A90E2" />
               </div>
               <div className="deployment-content">
-                <h5>클라우드</h5>
-                <p>OpenAI GPT 모델 사용</p>
+                <h5>Cloud</h5>
+                <p>Use OpenAI GPT models</p>
                 <ul>
-                  <li>• 빠른 응답 속도</li>
-                  <li>• 높은 정확도</li>
-                  <li>• 인터넷 연결 필요</li>
+                  <li>• Fast response</li>
+                  <li>• High accuracy</li>
+                  <li>• Requires internet</li>
                 </ul>
               </div>
             </div>
@@ -119,12 +119,12 @@ export default function NewBrainModal({ onClose, onCreated }) {
                 <MdSecurity size={24} color="#FF6B6B" />
               </div>
               <div className="deployment-content">
-                <h5>로컬</h5>
-                <p>Ollama 로컬 모델 사용</p>
+                <h5>Local</h5>
+                <p>Use Ollama local models</p>
                 <ul>
-                  <li>• 데이터 보안 강화</li>
-                  <li>• 오프라인 사용 가능</li>
-                  <li>• 로컬 리소스 사용</li>
+                  <li>• Stronger data privacy</li>
+                  <li>• Works offline</li>
+                  <li>• Uses local resources</li>
                 </ul>
               </div>
             </div>
@@ -133,12 +133,12 @@ export default function NewBrainModal({ onClose, onCreated }) {
 
         {/* 프로젝트 이름 입력 */}
         <div className="project-name-section">
-          <label htmlFor="project-name">프로젝트 이름</label>
+          <label htmlFor="project-name">Project name</label>
           <input
             ref={inputRef}
             id="project-name"
             type="text"
-            placeholder="프로젝트 이름 입력"
+            placeholder="Enter project name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -146,7 +146,7 @@ export default function NewBrainModal({ onClose, onCreated }) {
 
         {/* 생성 버튼: 입력 없으면 비활성화 */}
         <button type="submit" disabled={loading || !name.trim()}>
-          {loading ? "저장 중…" : "생성"}
+          {loading ? "Saving…" : "Create"}
         </button>
       </form>
     </div>

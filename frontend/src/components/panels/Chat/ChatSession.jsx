@@ -252,29 +252,29 @@ function ChatSession({
 
       {/* === 새 채팅 버튼 영역 === */}
       <div className="chat-session-sidebar-header">
-        <h2>채팅 목록</h2>
+        <h2>Chat list</h2>
         <button
           onClick={handleCreateSession}
           disabled={creating || !selectedBrainId}
           className="chat-session-new-chat-button"
         >
-          {creating ? "생성 중..." : "+ 새 채팅"}
+          {creating ? "Creating..." : "+ New chat"}
         </button>
       </div>
 
       {/* === 세션 목록 영역 === */}
       <ul className="chat-session-list">
         {loading ? (
-          <li className="chat-session-loading-item">불러오는 중...</li>
+          <li className="chat-session-loading-item">Loading...</li>
         ) : sessions.length === 0 ? (
           <li className="chat-session-empty-item">
             <div className="chat-session-empty-content">
               <div className="chat-session-empty-icon">💬</div>
               <div className="chat-session-empty-title">
-                첫 번째 대화를 시작해보세요
+                Start your first conversation
               </div>
               <div className="chat-session-empty-description">
-                새로운 아이디어를 탐색하고 질문에 답변을 받아보세요
+                Explore new ideas and get answers to your questions.
               </div>
             </div>
           </li>
@@ -378,14 +378,14 @@ function ChatSession({
               }
             >
               <GoPencil size={15} style={{ marginRight: 6 }} />
-              채팅 이름 바꾸기
+              Rename chat
             </div>
             <div
               className="chat-session-popup-item"
               onClick={() => handleDeleteSession(openMenuId)}
             >
               <RiDeleteBinLine size={15} style={{ marginRight: 6 }} />
-              채팅 삭제
+              Delete chat
             </div>
           </div>,
           document.body
@@ -393,13 +393,14 @@ function ChatSession({
 
       {/* === 안내 문구 === */}
       <p className="chat-session-disclaimer">
-        BrainTrace는 학습된 정보 기반으로 응답하며, 실제와 다를 수 있습니다.
+        BrainTrace responds based on learned information and may differ from
+        reality.
       </p>
 
       {/* === 삭제 확인 다이얼로그 === */}
       {showDeleteConfirm && (
         <ConfirmDialog
-          message="이 채팅방을 삭제하시겠습니까?"
+          message="Delete this chat?"
           onOk={executeDeleteSession}
           onCancel={() => {
             setShowDeleteConfirm(false);
