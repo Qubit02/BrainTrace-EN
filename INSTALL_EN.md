@@ -1,13 +1,13 @@
 # BrainTrace Execution Guide
 
-> **BrainTrace** is a knowledge-graph–based AI chatbot system that automatically builds a knowledge graph from uploaded documents and generates accurate answers.
+> **BrainTrace** is a knowledge‑graph‑based AI chatbot system that automatically builds a knowledge graph from uploaded documents and generates accurate answers.
 
 ## Table of Contents
 
-- [System Requirements](#system-requirements)
-- [Detailed Installation Guide](#detailed-installation-guide)
-- [Access Information](#access-information)
-- [Additional Resources](#additional-resources)
+- [System Requirements](#시스템-요구사항)
+- [Detailed Installation Guide](#상세-설치-가이드)
+- [Access Information](#접속-정보)
+- [Additional Resources](#추가-리소스)
 
 ## System Requirements
 
@@ -21,44 +21,45 @@
 
 ### Hardware Requirements
 
-#### Profile A: Use External LLM / Do Not Use Local LLM
+#### Profile A: External LLM / No Local LLM
 
-| Profile                                      | CPU     | RAM                             | Disk                    |
-| -------------------------------------------- | ------- | -------------------------------- | ----------------------- |
-| **A) External LLM / No Local LLM**           | 2–4 cores | **≥ 8GB**                        | 10–20GB                 |
-| **B) Local LLM (Ollama 7B, Q4)**             | 4–8 cores | **Minimum 12GB (16GB recommended)** | 30–50GB+ (models/cache) |
+| Profile | CPU | RAM | Disk |
+| ----------------------------------------- | ------- | ------------------------- | --------------------- |
+| **A) External LLM / No Local LLM** | 2–4 cores | **≥ 8GB** | 10–20GB |
+| **B) Local LLM (Ollama 7B, Q4)** | 4–8 cores | **Min 12GB (16GB recommended)** | 30–50GB+ (models/cache) |
 
 **Recommended Specs**
 
-- CPU: 6 cores  
-- Memory: 16GB RAM  
-- Storage: 50GB+ free space (for AI models and databases)
+- CPU: 6 cores
+- Memory: 16GB RAM
+- Storage: 50GB+ free space (for AI models and database)
 
-## Detailed Installation Guide (Choose one: Native run or [Run with Docker](#run-with-docker)) <a id="detailed-installation-guide"></a>
 
-### 1. Native Run
+## Detailed Installation Guide (Bare‑metal run, choose this or [Run with Docker](#도커로-실행)) <a id="상세-설치-가이드"></a>
+
+### 1. Bare‑metal Run
 
 ```bash
 git clone https://github.com/Qubit02/BrainTrace.git
 cd BrainTrace
 ```
 
-### 1.1 Backend Setup
+### 1.1 백엔드 설정
 
-#### 1.1.1 Create and Activate Python Virtual Environment (start from BrainTrace/)
+#### 1.1.1 Create and activate Python venv (start in BrainTrace/)
 
 ```bash
 cd backend
 
-# Create venv
+# 가상환경 생성
 python -m venv venv
 ```
 
-#### Activate Virtual Environment
+#### Activate venv
 
 ```
 # Windows
-venv\Scriptsctivate
+venv\Scripts\activate
 ```
 
 ```
@@ -66,21 +67,21 @@ venv\Scriptsctivate
 source venv/bin/activate
 ```
 
-#### 1.1.2 Install Dependencies
+#### 1.1.2 Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 1.1.3 Set Environment Variables
+#### 1.1.3 Set environment variables
 
 ```bash
-# Create .env -> backend/.env
+# .env 파일 생성 -> backend/.env
 
-# Add model install location when using Ollama
+#Ollama 사용 시 모델 설치 위치 변수 추가
 OLLAMA_MODELS=./models/ollama
 
-# API key
+# API 키 입력
 # OPENAI_API_KEY=your_api_key_here
 ```
 
@@ -88,9 +89,9 @@ OLLAMA_MODELS=./models/ollama
 
 #### 1.2.1 Install Neo4j
 
-> The scripts below automatically detect the execution location. In your terminal, paste one of the following snippets **at the repository root (BrainTrace/)** or inside **backend/**.
+> The scripts below auto‑detect the working directory. Run them either from the **repository root (BrainTrace/)** or inside **backend/**.
 
-#### Windows Installation (copy the snippet that matches your terminal: PowerShell or Git Bash)
+#### Windows installation (PowerShell or Git Bash – copy the snippet for your shell)
 
 <details>
 <summary><strong>PowerShell (Windows)</strong></summary>
@@ -103,7 +104,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-# --- 0) Settings & Path Rules -----------------------------------------------
+# --- 0) 설정 & 경로 규칙 -----------------------------------------------------
 $CWD = (Get-Location).Path
 $HereIsBackend = ((Split-Path -Leaf $CWD) -eq 'backend')
 $HereHasBackendChild = Test-Path (Join-Path $CWD 'backend')
@@ -119,7 +120,7 @@ elseif ($HereHasBackendChild) {
   $TARGET  = Join-Path $BACKEND 'neo4j'
 }
 else {
-  throw "Do not run here. Run at the repo root (where the backend folder is visible) or inside the backend folder."
+  throw "여기서는 실행하지 마세요. 루트(backend 폴더가 보이는 곳) 또는 backend 폴더에서 실행하세요."
 }
 
 $STAGE  = Join-Path $ROOT 'neo4j_stage'
@@ -129,7 +130,7 @@ if (-not ([Net.ServicePointManager]::SecurityProtocol -band [Net.SecurityProtoco
     [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 }
 
-# --- 1) Auto-detect latest version ------------------------------------------
+# --- 1) 최신 버전 자동 탐지 ---------------------------------------------------
 function Get-LatestNeo4jVersion {
   $pages = @(
     'https://neo4j.com/graph-data-science-software/',
@@ -165,13 +166,13 @@ function Get-LatestNeo4jVersion {
     if ($m.Success) { return $m.Groups['v'].Value }
   }
 
-  throw "Failed to find the latest version. Specify something like -Version '5.26.12'."
+  throw "최신 버전을 찾지 못했습니다. -Version '5.26.12' 같은 식으로 지정하세요."
 }
 
 if ($Version -eq 'latest') { $Version = Get-LatestNeo4jVersion }
 Write-Host "Using Neo4j Community version: $Version"
 
-# --- 2) Download -------------------------------------------------------------
+# --- 2) 다운로드 --------------------------------------------------------------
 $zipFileName = "neo4j-community-$Version-windows.zip"
 $ZIPPATH     = Join-Path $STAGE $zipFileName
 
@@ -207,21 +208,21 @@ function Try-Download($url) {
 
 $ok = $false
 foreach ($u in $urls) { if (Try-Download $u) { $ok = $true; break } }
-if (-not $ok) { throw "Neo4j ZIP download failed" }
+if (-not $ok) { throw "Neo4j ZIP 다운로드 실패" }
 
-# --- 3) Unzip & prepare folder ----------------------------------------------
+# --- 3) 압축 해제 & 폴더 정리 ------------------------------------------------
 Expand-Archive -Path $ZIPPATH -DestinationPath $STAGE -Force
 
 $extracted = Get-ChildItem -Path $STAGE -Directory |
   Where-Object { $_.Name -like "neo4j-community-*" } |
   Select-Object -First 1
-if (-not $extracted) { throw "Cannot find the extracted folder." }
+if (-not $extracted) { throw "압축 해제 후 폴더를 찾을 수 없습니다." }
 
 $prepared = Join-Path $STAGE "neo4j"
 if (Test-Path $prepared) { Remove-Item $prepared -Recurse -Force }
 Rename-Item -Path $extracted.FullName -NewName "neo4j"
 
-# --- 4) Move to target (fixed folder name) -----------------------------------
+# --- 4) 대상 위치로 이동 (폴더명 고정) ---------------------------------------
 $TARGET_PARENT = Split-Path $TARGET -Parent
 if (-not (Test-Path $TARGET_PARENT)) {
   New-Item -ItemType Directory -Path $TARGET_PARENT | Out-Null
@@ -236,15 +237,14 @@ if ((Split-Path $TARGET -Leaf) -ne 'neo4j') {
   }
 }
 
-# --- 5) Edit conf (based on final path) --------------------------------------
-$CONF = Join-Path $TARGET 'conf
-eo4j.conf'
+# --- 5) conf 수정 (최종 경로 기준으로) ---------------------------------------
+$CONF = Join-Path $TARGET 'conf\neo4j.conf'
 if (-not (Test-Path $CONF)) { throw "neo4j.conf not found: $CONF" }
 
 $text = Get-Content -LiteralPath $CONF -Raw
 $text = $text -replace "`r?`n", "`r`n"
 
-$pattern = '^[	 ]*#?[	 ]*dbms\.security\.auth_enabled[	 ]*=[	 ]*(true|false)([	 ]*#.*)?$'
+$pattern = '^[\t ]*#?[\t ]*dbms\.security\.auth_enabled[\t ]*=[\t ]*(true|false)([\t ]*#.*)?$'
 if ($text -match $pattern) {
   $text = [Regex]::Replace($text, $pattern, 'dbms.security.auth_enabled=false',
     [System.Text.RegularExpressions.RegexOptions]::Multiline)
@@ -256,10 +256,10 @@ if ($text -match $pattern) {
 $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($text)
 [System.IO.File]::WriteAllBytes($CONF, $bytes)
 
-# --- 6) Clean stage & finish -------------------------------------------------
+# --- 6) Stage 정리 & 결과 표시 ------------------------------------------------
 Remove-Item $STAGE -Recurse -Force
 
-Write-Host "✅ Neo4j $Version is ready"
+Write-Host "✅ Neo4j $Version 준비 완료"
 ```
 </details> 
 
@@ -271,7 +271,7 @@ set -euo pipefail
 
 VERSION="${1:-latest}"
 
-# ── 0) Path rules ─────────────────────────────────────────────
+# ── 0) 경로 규칙 ──────────────────────────────────────────────
 CWD="$(pwd)"
 if [[ "$(basename "$CWD")" == "backend" ]]; then
   ROOT="$(dirname "$CWD")"
@@ -282,22 +282,24 @@ elif [[ -d "$CWD/backend" ]]; then
   BACKEND="$ROOT/backend"
   TARGET="$BACKEND/neo4j"
 else
-  echo "❌ Run at the repo root (where the backend folder is visible) or inside backend." >&2
+  echo "❌ backend 폴더가 보이는 루트나 backend 내부에서 실행하세요." >&2
   exit 1
 fi
 STAGE="$ROOT/neo4j_stage"
 
 mkdir -p "$STAGE" "$BACKEND"
 
-# ── 1) Auto-detect latest version ─────────────────────────────
+# ── 1) 최신 버전 자동 탐지 ───────────────────────────────────
 if [[ "$VERSION" == "latest" ]]; then
   echo "🔍 Fetching latest Neo4j Community version..."
-  VERSION="$(curl -fsSL https://dist.neo4j.org/ |              grep -Eo 'neo4j-community-[0-9.]+-windows.zip' |              sort -V | tail -1 | grep -Eo '[0-9.]+')" || true
+  VERSION="$(curl -fsSL https://dist.neo4j.org/ | \
+             grep -Eo 'neo4j-community-[0-9.]+-windows.zip' | \
+             sort -V | tail -1 | grep -Eo '[0-9.]+')" || true
   [[ -z "$VERSION" ]] && VERSION="5.26.12"
 fi
 echo "Using Neo4j Community version: $VERSION"
 
-# ── 2) Download ───────────────────────────────────────────────
+# ── 2) 다운로드 ───────────────────────────────────────────────
 ZIPFILE="neo4j-community-${VERSION}-windows.zip"
 URLS=(
   "https://dist.neo4j.org/${ZIPFILE}"
@@ -312,24 +314,24 @@ for URL in "${URLS[@]}"; do
   fi
 done
 
-[[ ! -s "$ZIPFILE" ]] && { echo "❌ Download failed"; exit 1; }
+[[ ! -s "$ZIPFILE" ]] && { echo "❌ 다운로드 실패"; exit 1; }
 
-# ── 3) Unzip & tidy ───────────────────────────────────────────
+# ── 3) 압축 해제 및 폴더 정리 ────────────────────────────────
 unzip -q -o "$ZIPFILE"
 EXTRACTED="$(find . -maxdepth 1 -type d -name "neo4j-community-*")"
-[[ -z "$EXTRACTED" ]] && { echo "❌ Unzip failed"; exit 1; }
+[[ -z "$EXTRACTED" ]] && { echo "❌ 압축 해제 실패"; exit 1; }
 rm -rf neo4j && mv "$EXTRACTED" neo4j
 
-# ── 4) Move to target ────────────────────────────────────────
+# ── 4) 대상 위치로 이동 ───────────────────────────────────────
 rm -rf "$TARGET"
 mkdir -p "$(dirname "$TARGET")"
 mv neo4j "$TARGET"
 
-# ── 5) Edit conf (v4/v5 compatible) ──────────────────────────
+# ── 5) conf 수정 (v4/v5 호환) ────────────────────────────────
 CONF="$TARGET/conf/neo4j.conf"
-[[ ! -f "$CONF" ]] && { echo "❌ conf not found: $CONF"; exit 1; }
+[[ ! -f "$CONF" ]] && { echo "❌ conf 파일 없음: $CONF"; exit 1; }
 
-# Normalize lines and handle keys
+# 줄 통일 후 키 처리
 TMP="$(mktemp)"
 awk '
 BEGIN{found4=0;found5=0}
@@ -348,14 +350,14 @@ END{
 }' "$CONF" > "$TMP"
 mv "$TMP" "$CONF"
 
-# ── 6) Cleanup & output ──────────────────────────────────────
+# ── 6) 정리 및 출력 ───────────────────────────────────────────
 rm -rf "$STAGE"
-echo "✅ Neo4j $VERSION installed"
+echo "✅ Neo4j $VERSION 설치 완료"
 ```
 </details>
 
 
-#### macOS / Linux Installation
+#### macOS / Linux installation
 
 <details><summary><strong>macOS / Linux</strong></summary>
 
@@ -370,8 +372,8 @@ echo "✅ Neo4j $VERSION installed"
     ROOT="$(dirname "$CWD")"; BACKEND="$CWD"; TARGET="$BACKEND/neo4j"
   elif [[ -d "$CWD/backend" ]]; then
     ROOT="$CWD"; BACKEND="$ROOT/backend"; TARGET="$BACKEND/neo4j"
-  else {
-    echo "❌ Do not run here. Run at the repo root (where the backend folder is visible) or inside backend/." >&2
+  else
+    echo "❌ 여기서는 실행하지 마세요. 루트(backend 폴더 보이는 위치) 또는 backend/ 에서 실행" >&2
     exit 1
   fi
   STAGE="$ROOT/neo4j_stage"
@@ -385,18 +387,26 @@ echo "✅ Neo4j $VERSION installed"
     for u in "${pages[@]}"; do
       html="$(curl -fsSL --max-time 30 "$u" || true)" || true
       [[ -z "$html" ]] && continue
-      rel="$(printf '%s' "$html"         | grep -Eo 'https?://[^"]*download-thanks[^"]+'         | grep -E 'edition=community'         | grep -E 'unix|packaging=tar(\.gz)?|packaging=zip'         | grep -Eo 'release=[0-9]+\.[0-9]+\.[0-9]+'         | head -n1 | cut -d= -f2)"
+      rel="$(printf '%s' "$html" \
+        | grep -Eo 'https?://[^"]*download-thanks[^"]+' \
+        | grep -E 'edition=community' \
+        | grep -E 'unix|packaging=tar(\.gz)?|packaging=zip' \
+        | grep -Eo 'release=[0-9]+\.[0-9]+\.[0-9]+' \
+        | head -n1 | cut -d= -f2)"
       [[ -n "$rel" ]] && { printf '%s' "$rel"; return 0; }
-      rel="$(printf '%s' "$html"         | grep -Eo 'Neo4j Community Edition[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+'         | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'         | head -n1)"
+      rel="$(printf '%s' "$html" \
+        | grep -Eo 'Neo4j Community Edition[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+' \
+        | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' \
+        | head -n1)"
       [[ -n "$rel" ]] && { printf '%s' "$rel"; return 0; }
     done
     return 1
   }
 
   if [[ "$VERSION" == "latest" ]]; then
-    echo "🌐 Checking latest version..."
+    echo "🌐 최신 버전 확인 중..."
     if ! VERSION="$(get_latest_version)"; then
-      echo "❌ Failed to detect the latest version. Set VERSION env var (e.g., export VERSION=5.26.12)" >&2
+      echo "❌ 최신 버전 탐지 실패. 환경변수 VERSION으로 지정하세요. (예: export VERSION=5.26.12)" >&2
       exit 1
     fi
   fi
@@ -414,7 +424,10 @@ echo "✅ Neo4j $VERSION installed"
   download() {
     local url="$1"
     echo "⬇️  Downloading: $url"
-    curl -fL --retry 5 --retry-delay 2       --connect-timeout 25 --max-time 1800       --speed-time 30 --speed-limit 10240       -o "$ARCHIVE" "$url"
+    curl -fL --retry 5 --retry-delay 2 \
+      --connect-timeout 25 --max-time 1800 \
+      --speed-time 30 --speed-limit 10240 \
+      -o "$ARCHIVE" "$url"
   }
   ok=0
   for u in "${URLS[@]}"; do
@@ -423,11 +436,11 @@ echo "✅ Neo4j $VERSION installed"
       if [[ "$sz" -gt $((10*1024*1024)) ]]; then ok=1; break; else rm -f "$ARCHIVE"; fi
     fi
   done
-  [[ $ok -eq 1 ]] || { echo "❌ Neo4j tarball download failed" >&2; exit 1; }
+  [[ $ok -eq 1 ]] || { echo "❌ Neo4j tarball 다운로드 실패" >&2; exit 1; }
 
   tar -xzf "$ARCHIVE" -C "$STAGE"
   extracted="$(find "$STAGE" -maxdepth 1 -type d -name 'neo4j-community-*' | head -n1)"
-  [[ -n "$extracted" ]] || { echo "❌ Cannot find extracted folder." >&2; exit 1; }
+  [[ -n "$extracted" ]] || { echo "❌ 압축 해제 후 폴더를 찾을 수 없습니다." >&2; exit 1; }
 
   prepared="$STAGE/neo4j"
   rm -rf "$prepared"; mv "$extracted" "$prepared"
@@ -443,7 +456,7 @@ echo "✅ Neo4j $VERSION installed"
       printf '\n%s\n' 'dbms.security.auth_enabled=false' >> "$CONF"
     fi
   else
-    if "$SED" -E -n 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/X/p' "$CONF" | grep -q .; then
+    if "$SED" -E -n 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=.*/X/p' "$CONF" | grep -q .; then
       "$SED" -i '' -E 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/dbms.security.auth_enabled=false/' "$CONF"
     else
       printf '\n%s\n' 'dbms.security.auth_enabled=false' >> "$CONF"
@@ -459,123 +472,123 @@ echo "✅ Neo4j $VERSION installed"
 
   rm -rf "$STAGE"
   echo ""
-  echo "✅ Neo4j $VERSION is ready"
-  echo "📂 Path: $TARGET"
-  echo "🛠️ conf updated: $CONF"
-  echo "🚀 Example:  $TARGET/bin/neo4j console"
+  echo "✅ Neo4j $VERSION 준비 완료"
+  echo "📂 경로: $TARGET"
+  echo "🛠️ conf 적용: $CONF"
+  echo "🚀 실행 예:  $TARGET/bin/neo4j console"
 )
 ```
 </details>
 
-#### 1.2.2 Ollama Setup (Local AI Model)
+#### 1.2.2 Ollama setup (local AI model)
 
-[Download Ollama](https://ollama.com/download)
+[Ollama 다운로드](https://ollama.com/download)
 
-#### 1.2.3 Run Backend
+#### 1.2.3 Start the backend
+
+```bash
+py main.py
+```
+
+### 1.3 Frontend Setup
+
+#### 1.3.1 Install dependencies (start in BrainTrace/)
 
 ```bash
 cd frontend
 npm install
 ```
 
-### 1.3 Run Frontend
-
-#### 1.3.1 Install Dependencies (start from BrainTrace/)
-
-```bash
-cd frontend
-npm install
-```
-
-#### 1.3.2 Start Frontend
+#### 1.3.2 Run frontend
 
 ```bash
 npm run dev
 ```
 ---
-### 2. Run with Docker<a id="run-with-docker"></a>
+### 2. 도커로 실행<a id="도커로-실행"></a>
 
 ```bash
-# Clone repo
+# 저장소 클론
 git clone https://github.com/Qubit02/BrainTrace.git
 cd BrainTrace
 
-# Run with Docker Compose
+# 도커 컴포즈로 실행
 docker-compose up -d
 
-# Open in browser
-# Frontend: http://localhost:5173
-# Backend API: http://localhost:8000
+# 브라우저에서 접속
+# 프론트엔드: http://localhost:5173
+# 백엔드 API: http://localhost:8000
 # Neo4j: http://localhost:7474
 ```
 
-### Run Entire Stack
+### 전체 스택 실행
 
 ```bash
-# Start all services
+# 모든 서비스 실행
 docker-compose up -d
 ```
 
-### Run Services Individually
+### 개별 서비스 실행
 
 ```bash
-# Backend only
+# 백엔드만 실행
 docker-compose up backend
 
-# Frontend only
+# 프론트엔드만 실행
 docker-compose up frontend
 
-# Official neo4j/ollama containers
+# neo4j/ollama 공식 컨테이너 실행
 docker-compose up neo4j ollama
 ```
 
-### Stop & Clean Up
+### 서비스 중지 및 정리
 
 ```bash
-# Stop services
+# 서비스 중지
 docker-compose down
 
-# Remove volumes
+# 볼륨까지 삭제
 docker-compose down -v
 
-# Rebuild images
+# 이미지 재빌드
 docker-compose build --no-cache
 ```
 
+
 ## Access Information
 
-| Service           | URL                        | Description                 |
-| ----------------- | -------------------------- | --------------------------- |
-| **Frontend**      | http://localhost:5173      | Main web application        |
-| **Backend API**   | http://localhost:8000      | REST API server             |
-| **Swagger Docs**  | http://localhost:8000/docs | API documentation & testing |
-| **Neo4j Browser** | http://localhost:7474      | Graph database management   |
-| **Ollama API**    | http://localhost:11434     | Local AI model API          |
+| Service            | URL                        | Description              |
+| ------------------ | -------------------------- | ------------------------ |
+| **Frontend**       | http://localhost:5173      | Main web application     |
+| **Backend API**    | http://localhost:8000      | REST API server          |
+| **Swagger Docs**   | http://localhost:8000/docs | API documentation & test |
+| **Neo4j Browser**  | http://localhost:7474      | Graph database UI        |
+| **Ollama API**     | http://localhost:11434     | Local AI model API       |
 
 ## Additional Resources
 
-- [Project README](./README.md)
-- [Knowledge Graph Docs](./KNOWLEDGE_GRAPH.md)
-- [API Docs](http://localhost:8000/docs)
-- [Neo4j Docs](https://neo4j.com/docs/)
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
+- [프로젝트 README](./README.md)
+- [지식 그래프 문서](./KNOWLEDGE_GRAPH.md)
+- [API 문서](http://localhost:8000/docs)
+- [Neo4j 문서](https://neo4j.com/docs/)
+- [FastAPI 문서](https://fastapi.tiangolo.com/)
 
 ## Contributing
 
-If you’d like to contribute:
+To contribute to the project:
 
-1. Open an issue to report bugs or request features  
-2. Fork the repo and submit a Pull Request  
-3. Join code reviews and testing
+1. Open an issue to propose bugs or feature requests
+2. Fork the repo and submit a Pull Request
+3. Participate in code review and testing
 
 ## Support
 
 If you encounter issues or need help:
 
-- Create a [GitHub Issue](https://github.com/OSSBrainTrace/BrainTrace/issues)  
-- Check project documentation  
-- Use community forums
+- Create a [GitHub Issue](https://github.com/OSSBrainTrace/BrainTrace/issues)
+- Refer to the project documentation
+- Use the community forum
 
 ---
 
-**Note**: Downloading AI models can require significant disk space. You may need up to 10GB of free space per model file.
+**Note**: Downloading AI models can require significant disk space—up to 10 GB per model.
