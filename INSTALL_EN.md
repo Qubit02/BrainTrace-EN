@@ -1,11 +1,11 @@
-# BrainTrace Run Guide
+# BrainTrace Execution Guide
 
-> **BrainTrace** is a knowledge-graph–based AI chatbot system. Upload documents, and it automatically builds a knowledge graph and generates accurate answers.
+> **BrainTrace** is a knowledge-graph–based AI chatbot system that automatically builds a knowledge graph from uploaded documents and generates accurate answers.
 
 ## Table of Contents
 
 - [System Requirements](#system-requirements)
-- [Detailed Setup Guide](#detailed-setup-guide)
+- [Detailed Installation Guide](#detailed-installation-guide)
 - [Access Information](#access-information)
 - [Additional Resources](#additional-resources)
 
@@ -15,94 +15,37 @@
 
 - **Operating System**: Windows 10/11
 - **Python**: 3.12
-- **Node.js**: 20.19.0 or later
-- **Neo4j**: See below
-- **Ollama**: See below
+- **Node.js**: 20.19.0 or higher
+- **Neo4j**: see below
+- **Ollama**: see below
 
 ### Hardware Requirements
 
 #### Profile A: Use External LLM / Do Not Use Local LLM
 
-| Profile                                       | CPU     | RAM                              | Disk                    |
-| --------------------------------------------- | ------- | -------------------------------- | ----------------------- |
-| **A) Use external LLM / no local LLM**        | 2–4 cores | **≥ 8GB**                       | 10–20GB (images/logs)   |
-| **B) Local LLM (Ollama 7B, Q4 baseline) use** | 4–8 cores | **Min 12GB (16GB recommended)** | 30–50GB+ (models/cache) |
+| Profile                                      | CPU     | RAM                             | Disk                    |
+| -------------------------------------------- | ------- | -------------------------------- | ----------------------- |
+| **A) External LLM / No Local LLM**           | 2–4 cores | **≥ 8GB**                        | 10–20GB                 |
+| **B) Local LLM (Ollama 7B, Q4)**             | 4–8 cores | **Minimum 12GB (16GB recommended)** | 30–50GB+ (models/cache) |
 
 **Recommended Specs**
 
-- CPU: 6 cores
-- Memory: 16GB RAM
-- Storage: 50GB+ free space (for AI models and database)
+- CPU: 6 cores  
+- Memory: 16GB RAM  
+- Storage: 50GB+ free space (for AI models and databases)
 
+## Detailed Installation Guide (Choose one: Native run or [Run with Docker](#run-with-docker)) <a id="detailed-installation-guide"></a>
 
-## Detailed Setup Guide
-
-### 1. Run with Docker
-
-```bash
-# Clone the repository
-git clone https://github.com/OSSBrainTrace/BrainTrace.git
-cd BrainTrace
-
-# Run with docker-compose
-docker-compose up -d
-
-# Open in your browser
-# Frontend:  http://localhost:5173
-# Backend API: http://localhost:8000
-# Neo4j:     http://localhost:7474
-```
-
-### Run the full stack
-
-```bash
-# Start all services
-docker-compose up -d
-
-# Follow logs
-docker-compose logs -f
-
-# Start specific services only
-docker-compose up backend frontend
-```
-
-### Run services individually
-
-```bash
-# Backend only
-docker-compose up backend
-
-# Frontend only
-docker-compose up frontend
-
-# Database only
-docker-compose up neo4j ollama
-```
-
-### Stop & clean up services
-
-```bash
-# Stop services
-docker-compose down
-
-# Remove volumes as well
-docker-compose down -v
-
-# Rebuild images
-docker-compose build --no-cache
-```
-
-
-### 2. Run in a regular environment
+### 1. Native Run
 
 ```bash
 git clone https://github.com/Qubit02/BrainTrace.git
 cd BrainTrace
 ```
 
-### 2.1 Backend Setup
+### 1.1 Backend Setup
 
-#### 2.1.1 Create and activate a Python virtual environment
+#### 1.1.1 Create and Activate Python Virtual Environment (start from BrainTrace/)
 
 ```bash
 cd backend
@@ -111,11 +54,11 @@ cd backend
 python -m venv venv
 ```
 
-#### Activate the virtual environment
+#### Activate Virtual Environment
 
 ```
 # Windows
-venv\Scripts\activate
+venv\Scriptsctivate
 ```
 
 ```
@@ -123,70 +66,70 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-#### 2.1.2 Install dependencies
+#### 1.1.2 Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 2.1.3 Set environment variables
+#### 1.1.3 Set Environment Variables
 
 ```bash
-# Create .env at -> backend/.env
+# Create .env -> backend/.env
 
-# API keys and inputs
+# Add model install location when using Ollama
+OLLAMA_MODELS=./models/ollama
+
+# API key
 # OPENAI_API_KEY=your_api_key_here
 ```
 
-### 2.2 Database Setup
+### 1.2 Database Setup
 
-### 2.2.1 Install Neo4j
+#### 1.2.1 Install Neo4j
 
-> The scripts below auto-detect the working directory. Run them from **the repository root (where the backend/ folder is visible)** or from **backend/**.
+> The scripts below automatically detect the execution location. In your terminal, paste one of the following snippets **at the repository root (BrainTrace/)** or inside **backend/**.
+
+#### Windows Installation (copy the snippet that matches your terminal: PowerShell or Git Bash)
 
 <details>
 <summary><strong>PowerShell (Windows)</strong></summary>
-
+  
 ```powershell
-# Neo4j Community automatic installer (Windows PowerShell 5.1+ / PowerShell 7+)
-# - Run from repository root (where backend/ is visible) or from backend/
-# - Auto-detects latest version / fast HttpClient download / safe conf edit
+param(
+  [string]$Version = 'latest'
+)
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-# --- 0) Config & path rules ---------------------------------------------------
-if (-not $Version) { $Version = 'latest' }   # Override with: -Version '5.26.12' if needed
-
+# --- 0) Settings & Path Rules -----------------------------------------------
 $CWD = (Get-Location).Path
 $HereIsBackend = ((Split-Path -Leaf $CWD) -eq 'backend')
 $HereHasBackendChild = Test-Path (Join-Path $CWD 'backend')
 
 if ($HereIsBackend) {
-  # Running under backend/ → ./neo4j
   $ROOT    = Split-Path $CWD -Parent
   $BACKEND = $CWD
   $TARGET  = Join-Path $CWD 'neo4j'
 }
 elseif ($HereHasBackendChild) {
-  # Running at repo root → backend/neo4j
   $ROOT    = $CWD
   $BACKEND = Join-Path $ROOT 'backend'
   $TARGET  = Join-Path $BACKEND 'neo4j'
 }
 else {
-  throw "Do not run here. Run from the repo root (where backend is visible) or from backend."
+  throw "Do not run here. Run at the repo root (where the backend folder is visible) or inside the backend folder."
 }
 
 $STAGE  = Join-Path $ROOT 'neo4j_stage'
 
-# Enforce TLS 1.2 (legacy environments)
 if (-not ([Net.ServicePointManager]::SecurityProtocol -band [Net.SecurityProtocolType]::Tls12)) {
   [Net.ServicePointManager]::SecurityProtocol =
     [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 }
 
-# --- 1) Auto-detect latest version -------------------------------------------
+# --- 1) Auto-detect latest version ------------------------------------------
 function Get-LatestNeo4jVersion {
   $pages = @(
     'https://neo4j.com/graph-data-science-software/',
@@ -194,17 +137,19 @@ function Get-LatestNeo4jVersion {
   )
 
   foreach ($u in $pages) {
-    try { $resp = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 30 } catch { continue }
+    try {
+      $resp = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 30
+    } catch { continue }
 
     $links = @()
     if ($resp.Links) { $links = $resp.Links }
 
-    $href = $links `
-      | Where-Object { $_.href -match 'download-thanks\.html' } `
-      | Where-Object { $_.href -match 'edition=community' } `
-      | Where-Object { ($_.href -match 'winzip') -or ($_.href -match 'packaging=zip') } `
-      | Where-Object { $_.href -match 'release=' } `
-      | Select-Object -First 1 -ExpandProperty href
+    $href = $links |
+      Where-Object { $_.href -match 'download-thanks\.html' } |
+      Where-Object { $_.href -match 'edition=community' } |
+      Where-Object { ($_.href -match 'winzip') -or ($_.href -match 'packaging=zip') } |
+      Where-Object { $_.href -match 'release=' } |
+      Select-Object -First 1 -ExpandProperty href
 
     if ($href) {
       $q = ([uri]"https://dummy.local/?$([uri]$href).Query").Query.TrimStart('?')
@@ -220,22 +165,21 @@ function Get-LatestNeo4jVersion {
     if ($m.Success) { return $m.Groups['v'].Value }
   }
 
-  throw "Failed to find the latest version. Specify one like -Version '5.26.12'."
+  throw "Failed to find the latest version. Specify something like -Version '5.26.12'."
 }
 
 if ($Version -eq 'latest') { $Version = Get-LatestNeo4jVersion }
 Write-Host "Using Neo4j Community version: $Version"
 
-# --- 2) Download --------------------------------------------------------------
+# --- 2) Download -------------------------------------------------------------
 $zipFileName = "neo4j-community-$Version-windows.zip"
 $ZIPPATH     = Join-Path $STAGE $zipFileName
 
 $urls = @(
-  "https://dist.neo4j.org/$zipFileName",                   # CDN (fast)
-  "https://neo4j.com/artifact.php?name=$zipFileName"       # Fallback
+  "https://dist.neo4j.org/$zipFileName",
+  "https://neo4j.com/artifact.php?name=$zipFileName"
 )
 
-# Init stage
 if (Test-Path $STAGE) { Remove-Item $STAGE -Recurse -Force }
 New-Item -ItemType Directory -Path $STAGE | Out-Null
 if (-not (Test-Path $BACKEND)) { New-Item -ItemType Directory -Path $BACKEND | Out-Null }
@@ -243,22 +187,18 @@ if (-not (Test-Path $BACKEND)) { New-Item -ItemType Directory -Path $BACKEND | O
 function Try-Download($url) {
   try {
     Write-Host "Downloading via HttpClient: $url"
-
-    # PowerShell 5.x compat: load HttpClient
     if (-not ([System.Management.Automation.PSTypeName]'System.Net.Http.HttpClient').Type) {
       Add-Type -AssemblyName 'System.Net.Http'
     }
-
     $client = [System.Net.Http.HttpClient]::new()
     $client.Timeout = [TimeSpan]::FromMinutes(15)
     $resp = $client.GetAsync($url, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).Result
     $resp.EnsureSuccessStatusCode()
     $fs = [System.IO.FileStream]::new($ZIPPATH, [System.IO.FileMode]::Create)
     $resp.Content.CopyToAsync($fs).Wait()
-    $fs.Close()
-    $client.Dispose()
-
-    if ((Get-Item $ZIPPATH).Length -gt 10MB) { return $true } else { Remove-Item $ZIPPATH -Force }
+    $fs.Close(); $client.Dispose()
+    if ((Get-Item $ZIPPATH).Length -gt 10MB) { return $true }
+    else { Remove-Item $ZIPPATH -Force }
   } catch {
     Write-Host "Download failed: $($_.Exception.Message)"
     return $false
@@ -267,58 +207,27 @@ function Try-Download($url) {
 
 $ok = $false
 foreach ($u in $urls) { if (Try-Download $u) { $ok = $true; break } }
-if (-not $ok) { throw "Failed to download Neo4j ZIP" }
+if (-not $ok) { throw "Neo4j ZIP download failed" }
 
-# --- 3) Extract & prepare -----------------------------------------------------
+# --- 3) Unzip & prepare folder ----------------------------------------------
 Expand-Archive -Path $ZIPPATH -DestinationPath $STAGE -Force
 
-$extracted = Get-ChildItem -Path $STAGE -Directory `
-  | Where-Object { $_.Name -like "neo4j-community-*" } `
-  | Select-Object -First 1
-if (-not $extracted) { throw "Cannot find extracted folder after unzip." }
+$extracted = Get-ChildItem -Path $STAGE -Directory |
+  Where-Object { $_.Name -like "neo4j-community-*" } |
+  Select-Object -First 1
+if (-not $extracted) { throw "Cannot find the extracted folder." }
 
 $prepared = Join-Path $STAGE "neo4j"
 if (Test-Path $prepared) { Remove-Item $prepared -Recurse -Force }
 Rename-Item -Path $extracted.FullName -NewName "neo4j"
 
-# --- 4) Edit conf safely ------------------------------------------------------
-function Set-ContentUtf8NoBom {
-  param([string]$Path, [string]$Text)
-  $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($Text)  # no BOM
-  [System.IO.File]::WriteAllBytes($Path, $bytes)
-}
-
-$CONF = Join-Path $prepared "conf\neo4j.conf"
-if (-not (Test-Path $CONF)) { throw "neo4j.conf not found: $CONF" }
-
-# Normalize line endings
-$text = Get-Content -LiteralPath $CONF -Raw
-$text = $text -replace "`r?`n", "`r`n"
-
-# Normalize/comment variations → set auth disabled
-$pattern = '^[\t ]*#?[\t ]*dbms\.security\.auth_enabled[\t ]*=[\t ]*(true|false)[\t ]*$'
-if ($text -match $pattern) {
-  $text = [System.Text.RegularExpressions.Regex]::Replace(
-    $text, $pattern, 'dbms.security.auth_enabled=false',
-    [System.Text.RegularExpressions.RegexOptions]::Multiline
-  )
-} else {
-  if ($text.Length -gt 0 -and $text[-1] -ne "`n") { $text += "`r`n" }
-  $text += 'dbms.security.auth_enabled=false' + "`r`n"
-}
-
-Set-ContentUtf8NoBom -Path $CONF -Text $text
-
-# --- 5) Move to target (fixed folder name) -----------------------------------
-# Ensure parent dir
+# --- 4) Move to target (fixed folder name) -----------------------------------
 $TARGET_PARENT = Split-Path $TARGET -Parent
 if (-not (Test-Path $TARGET_PARENT)) {
   New-Item -ItemType Directory -Path $TARGET_PARENT | Out-Null
 }
-# Remove existing target if any
 if (Test-Path $TARGET) { Remove-Item $TARGET -Recurse -Force }
 
-# Move and correct name
 Move-Item -LiteralPath $prepared -Destination $TARGET_PARENT -Force
 $justMoved = Join-Path $TARGET_PARENT 'neo4j'
 if ((Split-Path $TARGET -Leaf) -ne 'neo4j') {
@@ -327,12 +236,30 @@ if ((Split-Path $TARGET -Leaf) -ne 'neo4j') {
   }
 }
 
-# Cleanup stage
+# --- 5) Edit conf (based on final path) --------------------------------------
+$CONF = Join-Path $TARGET 'conf
+eo4j.conf'
+if (-not (Test-Path $CONF)) { throw "neo4j.conf not found: $CONF" }
+
+$text = Get-Content -LiteralPath $CONF -Raw
+$text = $text -replace "`r?`n", "`r`n"
+
+$pattern = '^[	 ]*#?[	 ]*dbms\.security\.auth_enabled[	 ]*=[	 ]*(true|false)([	 ]*#.*)?$'
+if ($text -match $pattern) {
+  $text = [Regex]::Replace($text, $pattern, 'dbms.security.auth_enabled=false',
+    [System.Text.RegularExpressions.RegexOptions]::Multiline)
+} else {
+  if ($text.Length -gt 0 -and $text[-1] -ne "`n") { $text += "`r`n" }
+  $text += 'dbms.security.auth_enabled=false' + "`r`n"
+}
+
+$bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($text)
+[System.IO.File]::WriteAllBytes($CONF, $bytes)
+
+# --- 6) Clean stage & finish -------------------------------------------------
 Remove-Item $STAGE -Recurse -Force
 
 Write-Host "✅ Neo4j $Version is ready"
-Write-Host "📂 Path: $TARGET"
-Write-Host "🛠️ conf updated: $CONF"
 ```
 </details> 
 
@@ -340,270 +267,290 @@ Write-Host "🛠️ conf updated: $CONF"
 
 ```bash
 #!/usr/bin/env bash
-# Neo4j Community automatic installer (Git Bash / Windows)
-# - Run from repository root (where backend/ is visible) or from backend/
-# - Auto-detect latest → download ZIP → unzip → set conf (auth disabled)
-
 set -euo pipefail
 
-VERSION="${VERSION:-latest}"   # e.g., VERSION=5.26.12 ./install_neo4j_gitbash.sh
-die(){ echo "Error: $*" >&2; exit 1; }
+VERSION="${1:-latest}"
 
-# Working directory rules
+# ── 0) Path rules ─────────────────────────────────────────────
 CWD="$(pwd)"
 if [[ "$(basename "$CWD")" == "backend" ]]; then
-  ROOT="$(dirname "$CWD")"; BACKEND="$CWD"; TARGET="$CWD/neo4j"
+  ROOT="$(dirname "$CWD")"
+  BACKEND="$CWD"
+  TARGET="$CWD/neo4j"
 elif [[ -d "$CWD/backend" ]]; then
-  ROOT="$CWD"; BACKEND="$ROOT/backend"; TARGET="$BACKEND/neo4j"
+  ROOT="$CWD"
+  BACKEND="$ROOT/backend"
+  TARGET="$BACKEND/neo4j"
 else
-  die "Run from repo root (where backend is visible) or from backend/."
+  echo "❌ Run at the repo root (where the backend folder is visible) or inside backend." >&2
+  exit 1
 fi
 STAGE="$ROOT/neo4j_stage"
 
-# Dependencies
-command -v curl >/dev/null || die "curl required"
-command -v unzip >/dev/null || die "unzip required"
-SED="sed"; command -v gsed >/dev/null && SED="gsed"
+mkdir -p "$STAGE" "$BACKEND"
 
-# Auto-detect latest version
-get_latest_version() {
-  local pages=(
-    "https://neo4j.com/graph-data-science-software/"
-    "https://neo4j.com/deployment-center/"
-  )
-  local ver=""
-  for u in "${pages[@]}"; do
-    html="$(curl -fsSL --max-time 30 "$u" || true)"; [[ -z "$html" ]] && continue
-    rel="$(printf '%s' "$html" \
-      | grep -Eo 'https?://[^"]*download-thanks[^"]+' \
-      | grep -E 'edition=community' \
-      | grep -E 'flavour=winzip|packaging=zip' \
-      | grep -Eo 'release=[0-9]+\.[0-9]+\.[0-9]+' \
-      | head -n1 | cut -d= -f2)"
-    if [[ -n "$rel" ]]; then ver="$rel"; break; fi
-    rel="$(printf '%s' "$html" \
-      | grep -Eo 'Neo4j Community Edition[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+' \
-      | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
-    [[ -n "$rel" ]] && { ver="$rel"; break; }
-  done
-  [[ -z "$ver" ]] && die "Failed to detect latest version. Set VERSION env var."
-  printf '%s' "$ver"
-}
-[[ "$VERSION" == "latest" ]] && VERSION="$(get_latest_version)"
+# ── 1) Auto-detect latest version ─────────────────────────────
+if [[ "$VERSION" == "latest" ]]; then
+  echo "🔍 Fetching latest Neo4j Community version..."
+  VERSION="$(curl -fsSL https://dist.neo4j.org/ |              grep -Eo 'neo4j-community-[0-9.]+-windows.zip' |              sort -V | tail -1 | grep -Eo '[0-9.]+')" || true
+  [[ -z "$VERSION" ]] && VERSION="5.26.12"
+fi
 echo "Using Neo4j Community version: $VERSION"
 
-ZIP="neo4j-community-$VERSION-windows.zip"
+# ── 2) Download ───────────────────────────────────────────────
+ZIPFILE="neo4j-community-${VERSION}-windows.zip"
 URLS=(
-  "https://dist.neo4j.org/$ZIP"
-  "https://neo4j.com/artifact.php?name=$ZIP"
+  "https://dist.neo4j.org/${ZIPFILE}"
+  "https://neo4j.com/artifact.php?name=${ZIPFILE}"
 )
 
-rm -rf "$STAGE"; mkdir -p "$STAGE" "$BACKEND"
-ARCHIVE="$STAGE/$ZIP"
-
-download() {
-  local url="$1"
-  echo "Downloading: $url"
-  curl -fL --retry 5 --retry-delay 2 \
-       --connect-timeout 25 --max-time 1800 \
-       --speed-time 30 --speed-limit 10240 \
-       -o "$ARCHIVE" "$url"
-}
-ok=0
-for u in "${URLS[@]}"; do
-  if download "$u"; then
-    sz="$(wc -c <"$ARCHIVE" 2>/dev/null || echo 0)"
-    if [[ "$sz" -gt $((10*1024*1024)) ]]; then ok=1; break; else rm -f "$ARCHIVE"; fi
+cd "$STAGE"
+for URL in "${URLS[@]}"; do
+  echo "⬇️  Downloading: $URL"
+  if curl -fL --connect-timeout 20 -o "$ZIPFILE" "$URL"; then
+    [[ -s "$ZIPFILE" ]] && break
   fi
 done
-[[ $ok -eq 1 ]] || die "Neo4j ZIP download failed"
 
-unzip -q "$ARCHIVE" -d "$STAGE"
-extracted="$(find "$STAGE" -maxdepth 1 -type d -name 'neo4j-community-*' | head -n1)"
-[[ -n "$extracted" ]] || die "Cannot find extracted folder"
+[[ ! -s "$ZIPFILE" ]] && { echo "❌ Download failed"; exit 1; }
 
-prepared="$STAGE/neo4j"
-rm -rf "$prepared"; mv "$extracted" "$prepared"
+# ── 3) Unzip & tidy ───────────────────────────────────────────
+unzip -q -o "$ZIPFILE"
+EXTRACTED="$(find . -maxdepth 1 -type d -name "neo4j-community-*")"
+[[ -z "$EXTRACTED" ]] && { echo "❌ Unzip failed"; exit 1; }
+rm -rf neo4j && mv "$EXTRACTED" neo4j
 
-CONF="$prepared/conf/neo4j.conf"
-[[ -f "$CONF" ]] || die "neo4j.conf not found: $CONF"
-
-# Normalize and disable auth
-if grep -Eq '^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=' "$CONF"; then
-  "$SED" -i -E 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/dbms.security.auth_enabled=false/' "$CONF"
-else
-  printf '\n%s\n' 'dbms.security.auth_enabled=false' >> "$CONF"
-fi
-
-mkdir -p "$(dirname "$TARGET")"
+# ── 4) Move to target ────────────────────────────────────────
 rm -rf "$TARGET"
-mv "$prepared" "$(dirname "$TARGET")"
-if [[ "$(basename "$TARGET")" != "neo4j" && -d "$(dirname "$TARGET")/neo4j" ]]; then
-  mv "$(dirname "$TARGET")/neo4j" "$TARGET"
-fi
+mkdir -p "$(dirname "$TARGET")"
+mv neo4j "$TARGET"
 
+# ── 5) Edit conf (v4/v5 compatible) ──────────────────────────
+CONF="$TARGET/conf/neo4j.conf"
+[[ ! -f "$CONF" ]] && { echo "❌ conf not found: $CONF"; exit 1; }
+
+# Normalize lines and handle keys
+TMP="$(mktemp)"
+awk '
+BEGIN{found4=0;found5=0}
+{
+  if($0 ~ /^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=/){
+    print "dbms.security.auth_enabled=false"; found4=1; next
+  }
+  if($0 ~ /^[[:space:]]*#?[[:space:]]*dbms\.security\.authentication_enabled[[:space:]]*=/){
+    print "dbms.security.authentication_enabled=false"; found5=1; next
+  }
+  print $0
+}
+END{
+  if(!found4) print "dbms.security.auth_enabled=false";
+  if(!found5) print "dbms.security.authentication_enabled=false";
+}' "$CONF" > "$TMP"
+mv "$TMP" "$CONF"
+
+# ── 6) Cleanup & output ──────────────────────────────────────
 rm -rf "$STAGE"
-echo "✅ Neo4j $VERSION is ready"
-echo "📂 Path: $TARGET"
-echo "🛠️ conf updated: $CONF"
+echo "✅ Neo4j $VERSION installed"
 ```
+</details>
 
-</details> 
+
+#### macOS / Linux Installation
 
 <details><summary><strong>macOS / Linux</strong></summary>
 
 ```bash
-#!/usr/bin/env bash
-# Neo4j Community automatic installer (macOS / Linux)
-# - Run from repository root (where backend/ is visible) or from backend/
-# - Auto-detect latest → download TAR.GZ → extract → set conf (auth disabled)
+( set -eu
+  set +u; set -o pipefail 2>/dev/null || true; set -u
 
-set -euo pipefail
+  : "${VERSION:=latest}"
 
-VERSION="${VERSION:-latest}"   # e.g., VERSION=5.26.12 ./install_neo4j_macos.sh
-die(){ echo "Error: $*" >&2; exit 1; }
+  CWD="$PWD"
+  if [[ "$(basename "$CWD")" == "backend" ]]; then
+    ROOT="$(dirname "$CWD")"; BACKEND="$CWD"; TARGET="$BACKEND/neo4j"
+  elif [[ -d "$CWD/backend" ]]; then
+    ROOT="$CWD"; BACKEND="$ROOT/backend"; TARGET="$BACKEND/neo4j"
+  else {
+    echo "❌ Do not run here. Run at the repo root (where the backend folder is visible) or inside backend/." >&2
+    exit 1
+  fi
+  STAGE="$ROOT/neo4j_stage"
 
-# Working directory rules
-CWD="$(pwd)"
-if [[ "$(basename "$CWD")" == "backend" ]]; then
-  ROOT="$(dirname "$CWD")"; BACKEND="$CWD"; TARGET="$CWD/neo4j"
-elif [[ -d "$CWD/backend" ]]; then
-  ROOT="$CWD"; BACKEND="$ROOT/backend"; TARGET="$BACKEND/neo4j"
-else
-  die "Run from repo root (where backend is visible) or from backend/."
-fi
-STAGE="$ROOT/neo4j_stage"
+  get_latest_version() {
+    local pages=(
+      "https://neo4j.com/graph-data-science-software/"
+      "https://neo4j.com/deployment-center/"
+    )
+    local html rel
+    for u in "${pages[@]}"; do
+      html="$(curl -fsSL --max-time 30 "$u" || true)" || true
+      [[ -z "$html" ]] && continue
+      rel="$(printf '%s' "$html"         | grep -Eo 'https?://[^"]*download-thanks[^"]+'         | grep -E 'edition=community'         | grep -E 'unix|packaging=tar(\.gz)?|packaging=zip'         | grep -Eo 'release=[0-9]+\.[0-9]+\.[0-9]+'         | head -n1 | cut -d= -f2)"
+      [[ -n "$rel" ]] && { printf '%s' "$rel"; return 0; }
+      rel="$(printf '%s' "$html"         | grep -Eo 'Neo4j Community Edition[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+'         | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+'         | head -n1)"
+      [[ -n "$rel" ]] && { printf '%s' "$rel"; return 0; }
+    done
+    return 1
+  }
 
-# Dependencies
-command -v curl >/dev/null || die "curl required"
-command -v tar  >/dev/null || die "tar required"
-SED="sed"; command -v gsed >/dev/null && SED="gsed"
+  if [[ "$VERSION" == "latest" ]]; then
+    echo "🌐 Checking latest version..."
+    if ! VERSION="$(get_latest_version)"; then
+      echo "❌ Failed to detect the latest version. Set VERSION env var (e.g., export VERSION=5.26.12)" >&2
+      exit 1
+    fi
+  fi
+  echo "✅ Using Neo4j Community version: $VERSION"
 
-# Auto-detect latest version
-get_latest_version() {
-  local pages=(
-    "https://neo4j.com/graph-data-science-software/"
-    "https://neo4j.com/deployment-center/"
+  TAR="neo4j-community-$VERSION-unix.tar.gz"
+  URLS=(
+    "https://dist.neo4j.org/$TAR"
+    "https://neo4j.com/artifact.php?name=$TAR"
   )
-  local ver=""
-  for u in "${pages[@]}"; do
-    html="$(curl -fsSL --max-time 30 "$u" || true)"; [[ -z "$html" ]] && continue
-    rel="$(printf '%s' "$html" \
-      | grep -Eo 'https?://[^"]*download-thanks[^"]+' \
-      | grep -E 'edition=community' \
-      | grep -E 'unix|packaging=tar(\.gz)?|packaging=zip' \
-      | grep -Eo 'release=[0-9]+\.[0-9]+\.[0-9]+' \
-      | head -n1 | cut -d= -f2)"
-    if [[ -n "$rel" ]]; then ver="$rel"; break; fi
-    rel="$(printf '%s' "$html" \
-      | grep -Eo 'Neo4j Community Edition[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+' \
-      | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
-    [[ -n "$rel" ]] && { ver="$rel"; break; }
+
+  rm -rf "$STAGE"; mkdir -p "$STAGE" "$BACKEND"
+  ARCHIVE="$STAGE/$TAR"
+
+  download() {
+    local url="$1"
+    echo "⬇️  Downloading: $url"
+    curl -fL --retry 5 --retry-delay 2       --connect-timeout 25 --max-time 1800       --speed-time 30 --speed-limit 10240       -o "$ARCHIVE" "$url"
+  }
+  ok=0
+  for u in "${URLS[@]}"; do
+    if download "$u"; then
+      sz="$(wc -c <"$ARCHIVE" 2>/dev/null || echo 0)"
+      if [[ "$sz" -gt $((10*1024*1024)) ]]; then ok=1; break; else rm -f "$ARCHIVE"; fi
+    fi
   done
-  [[ -z "$ver" ]] && die "Failed to detect latest version. Set VERSION env var."
-  printf '%s' "$ver"
-}
-[[ "$VERSION" == "latest" ]] && VERSION="$(get_latest_version)"
-echo "Using Neo4j Community version: $VERSION"
+  [[ $ok -eq 1 ]] || { echo "❌ Neo4j tarball download failed" >&2; exit 1; }
 
-TAR="neo4j-community-$VERSION-unix.tar.gz"
-URLS=(
-  "https://dist.neo4j.org/$TAR"
-  "https://neo4j.com/artifact.php?name=$TAR"
-)
+  tar -xzf "$ARCHIVE" -C "$STAGE"
+  extracted="$(find "$STAGE" -maxdepth 1 -type d -name 'neo4j-community-*' | head -n1)"
+  [[ -n "$extracted" ]] || { echo "❌ Cannot find extracted folder." >&2; exit 1; }
 
-rm -rf "$STAGE"; mkdir -p "$STAGE" "$BACKEND"
-ARCHIVE="$STAGE/$TAR"
+  prepared="$STAGE/neo4j"
+  rm -rf "$prepared"; mv "$extracted" "$prepared"
 
-download() {
-  local url="$1"
-  echo "Downloading: $url"
-  curl -fL --retry 5 --retry-delay 2 \
-       --connect-timeout 25 --max-time 1800 \
-       --speed-time 30 --speed-limit 10240 \
-       -o "$ARCHIVE" "$url"
-}
-ok=0
-for u in "${URLS[@]}"; do
-  if download "$u"; then
-    sz="$(wc -c <"$ARCHIVE" 2>/dev/null || echo 0)"
-    if [[ "$sz" -gt $((10*1024*1024)) ]]; then ok=1; break; else rm -f "$ARCHIVE"; fi
-  fi
-done
-[[ $ok -eq 1 ]] || die "Neo4j tarball download failed"
+  CONF="$prepared/conf/neo4j.conf"
+  [[ -f "$CONF" ]] || { echo "❌ neo4j.conf not found: $CONF" >&2; exit 1; }
 
-tar -xzf "$ARCHIVE" -C "$STAGE"
-extracted="$(find "$STAGE" -maxdepth 1 -type d -name 'neo4j-community-*' | head -n1)"
-[[ -n "$extracted" ]] || die "Cannot find extracted folder"
-
-prepared="$STAGE/neo4j"
-rm -rf "$prepared"; mv "$extracted" "$prepared"
-
-CONF="$prepared/conf/neo4j.conf"
-[[ -f "$CONF" ]] || die "neo4j.conf not found: $CONF"
-
-# Normalize and disable auth (BSD sed on mac supported)
-if grep -Eq '^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=' "$CONF"; then
-  if sed --version >/dev/null 2>&1; then
-    sed -i -E 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/dbms.security.auth_enabled=false/' "$CONF"
+  if command -v gsed >/dev/null 2>&1; then SED="gsed"; else SED="sed"; fi
+  if "$SED" --version >/dev/null 2>/dev/null; then
+    if "$SED" -E -n 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=.*/X/p' "$CONF" | grep -q .; then
+      "$SED" -i -E 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/dbms.security.auth_enabled=false/' "$CONF"
+    else
+      printf '\n%s\n' 'dbms.security.auth_enabled=false' >> "$CONF"
+    fi
   else
-    sed -i '' -E 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/dbms.security.auth_enabled=false/' "$CONF"
+    if "$SED" -E -n 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/X/p' "$CONF" | grep -q .; then
+      "$SED" -i '' -E 's/^[[:space:]]*#?[[:space:]]*dbms\.security\.auth_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/dbms.security.auth_enabled=false/' "$CONF"
+    else
+      printf '\n%s\n' 'dbms.security.auth_enabled=false' >> "$CONF"
+    fi
   fi
-else
-  printf '\n%s\n' 'dbms.security.auth_enabled=false' >> "$CONF"
-fi
 
-mkdir -p "$(dirname "$TARGET")"
-rm -rf "$TARGET"
-mv "$prepared" "$(dirname "$TARGET")"
-if [[ "$(basename "$TARGET")" != "neo4j" && -d "$(dirname "$TARGET")/neo4j" ]]; then
-  mv "$(dirname "$TARGET")/neo4j" "$TARGET"
-fi
+  mkdir -p "$(dirname "$TARGET")"
+  rm -rf "$TARGET"
+  mv "$prepared" "$(dirname "$TARGET")"
+  if [[ "$(basename "$TARGET")" != "neo4j" && -d "$(dirname "$TARGET")/neo4j" ]]; then
+    mv "$(dirname "$TARGET")/neo4j" "$TARGET"
+  fi
 
-rm -rf "$STAGE"
-echo "✅ Neo4j $VERSION is ready"
-echo "📂 Path: $TARGET"
-echo "🛠️ conf updated: $CONF"
+  rm -rf "$STAGE"
+  echo ""
+  echo "✅ Neo4j $VERSION is ready"
+  echo "📂 Path: $TARGET"
+  echo "🛠️ conf updated: $CONF"
+  echo "🚀 Example:  $TARGET/bin/neo4j console"
+)
 ```
 </details>
 
-#### 2.2.2 Set up Ollama (local AI model)
+#### 1.2.2 Ollama Setup (Local AI Model)
 
 [Download Ollama](https://ollama.com/download)
 
-#### 2.2.3 Run the backend
-
-```bash
-cd backend
-python main.py
-```
-
-### 2.3 Frontend Setup
-
-#### 2.3.1 Install dependencies
+#### 1.2.3 Run Backend
 
 ```bash
 cd frontend
 npm install
 ```
 
-#### 2.3.2 Run the frontend
+### 1.3 Run Frontend
+
+#### 1.3.1 Install Dependencies (start from BrainTrace/)
+
+```bash
+cd frontend
+npm install
+```
+
+#### 1.3.2 Start Frontend
 
 ```bash
 npm run dev
 ```
+---
+### 2. Run with Docker<a id="run-with-docker"></a>
 
+```bash
+# Clone repo
+git clone https://github.com/Qubit02/BrainTrace.git
+cd BrainTrace
 
+# Run with Docker Compose
+docker-compose up -d
+
+# Open in browser
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:8000
+# Neo4j: http://localhost:7474
+```
+
+### Run Entire Stack
+
+```bash
+# Start all services
+docker-compose up -d
+```
+
+### Run Services Individually
+
+```bash
+# Backend only
+docker-compose up backend
+
+# Frontend only
+docker-compose up frontend
+
+# Official neo4j/ollama containers
+docker-compose up neo4j ollama
+```
+
+### Stop & Clean Up
+
+```bash
+# Stop services
+docker-compose down
+
+# Remove volumes
+docker-compose down -v
+
+# Rebuild images
+docker-compose build --no-cache
+```
 
 ## Access Information
 
-| Service            | URL                        | Description               |
-| ------------------ | -------------------------- | ------------------------- |
-| **Frontend**       | http://localhost:5173      | Main web application      |
-| **Backend API**    | http://localhost:8000      | REST API server           |
-| **Swagger Docs**   | http://localhost:8000/docs | API documentation & test  |
-| **Neo4j Browser**  | http://localhost:7474      | Graph database console    |
-| **Ollama API**     | http://localhost:11434     | Local AI model API        |
+| Service           | URL                        | Description                 |
+| ----------------- | -------------------------- | --------------------------- |
+| **Frontend**      | http://localhost:5173      | Main web application        |
+| **Backend API**   | http://localhost:8000      | REST API server             |
+| **Swagger Docs**  | http://localhost:8000/docs | API documentation & testing |
+| **Neo4j Browser** | http://localhost:7474      | Graph database management   |
+| **Ollama API**    | http://localhost:11434     | Local AI model API          |
 
 ## Additional Resources
 
@@ -617,18 +564,18 @@ npm run dev
 
 If you’d like to contribute:
 
-1. Open an issue to report bugs or request features
-2. Fork the repo and submit a Pull Request
-3. Participate in code review and testing
+1. Open an issue to report bugs or request features  
+2. Fork the repo and submit a Pull Request  
+3. Join code reviews and testing
 
 ## Support
 
-If you run into problems or need help:
+If you encounter issues or need help:
 
-- Open an issue on [GitHub Issues](https://github.com/OSSBrainTrace/BrainTrace/issues)
-- Refer to the project documentation
-- Use the community forum(s)
+- Create a [GitHub Issue](https://github.com/OSSBrainTrace/BrainTrace/issues)  
+- Check project documentation  
+- Use community forums
 
 ---
 
-**Note**: Downloading AI models may require substantial disk space. Allocate up to 10GB per model file.
+**Note**: Downloading AI models can require significant disk space. You may need up to 10GB of free space per model file.
