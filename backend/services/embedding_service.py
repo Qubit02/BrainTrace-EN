@@ -119,30 +119,48 @@ def encode_text(text: str) -> List[float]:
         raise RuntimeError(f"텍스트 임베딩 생성 실패: {str(e)}")
 
 
-def get_embeddings_batch(texts: List[str]) -> np.ndarray:
-    lang, _ =langid.classify("".join(texts))
+def get_embeddings_batch(texts: List[str], lang:str) -> np.ndarray:
     """
+    Embeds the given list of texts using the model appropriate for the language and returns it as a numpy array.
+    Ensures the return value is always a 2D numpy array with shape (N, D).
+    """
+    lang="en"
+
+    # ---- Korean Embedding ----
     if lang == "ko":
         inputs = tokenizer(
             texts, return_tensors="pt", padding=True, truncation=True, max_length=512
         )
         with torch.no_grad():
             outputs = model(**inputs)
-        cls_embeddings = outputs.last_hidden_state[:, 0, :]  # [CLS] 토큰 임베딩
-        return cls_embeddings.cpu().numpy()
-    """
-    if lang == "en":
-        embeddings = eng_model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
-    
-    else:
-        logging.error(f"지원하지 않는 언어 코드: {lang}")
-        embeddings = eng_model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+        cls_embeddings = outputs.last_hidden_state[:, 0, :]  # [CLS] token
+        embeddings = cls_embeddings.cpu().numpy()
 
+    # ---- English Embedding ----
+    elif lang == "en":
+        embeddings = eng_model.encode(
+            texts, convert_to_numpy=True, normalize_embeddings=True
+        )
+
+    else:
+        raise ValueError(f"Unsupported language code: {lang}")
+
+    # ---- Force shape correction ----
+    embeddings = np.atleast_2d(embeddings)  # Always maintain 2D shape
     return embeddings
 
 def store_embeddings(node:dict, brain_id:str, embeddings:list):
 
+    lang="en"
     collection_name = get_collection_name(brain_id)
+
+    if embeddings is None or embeddings.size == 0: 
+        length = 0
+
+    else:
+        length=len(embeddings)
+
+
     for idx, desc in enumerate(node["descriptions"]):
         description=desc["description"]
         source_id=node["source_id"]
@@ -151,35 +169,41 @@ def store_embeddings(node:dict, brain_id:str, embeddings:list):
         if description == "":
             try:
                 description = node["name"]
-                emb = get_embeddings_batch([description])
+                emb = get_embeddings_batch([description], lang)
                 if emb is None or emb.size == 0:
-                    logging.warning("임베딩 생성 실패: %s", description)
+                    logging.warning("Failed to generate embedding: %s", description)
                     continue
                 emb = emb[0] if emb.ndim > 1 else emb
             except Exception as e:
-                logging.error("임베딩 생성 중 오류: %s - %s", description, str(e))
+                logging.error("Error during embedding generation: %s - %s", description, str(e))
                 continue
         else:
-            if embeddings is None or embeddings.size == 0:  # 빈 리스트 체크
+            if embeddings is None or embeddings.size == 0:  # Check for empty list
                 highlighted_description = description.replace(phrase, f"[{phrase}]")
-                emb = get_embeddings_batch([highlighted_description])
+                emb = get_embeddings_batch([highlighted_description], lang)
                 emb = emb[0] if emb.ndim > 1 else emb
             else:
-                emb = np.array(embeddings[idx])
-                if emb.ndim > 1:
-                    emb = emb[0]
+                if length > idx:
+                    emb = np.array(embeddings[idx])
+                    if emb.ndim > 1:
+                        emb = emb[0]
+
+                else:
+                    break
+
         
         desc_hash = str(hash(description)) if description else "empty"
         pid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{source_id}_{desc_hash}"))
         
-        # Qdrant에 upsert (예외 처리)
+        # Upsert to Qdrant (with exception handling)
         try:
+            vector_as_list = emb.tolist()
             client.upsert(
                 collection_name=collection_name,
                 points=[
                     models.PointStruct(
                         id=pid,
-                        vector=emb,
+                        vector=vector_as_list,
                         payload={
                             "source_id": source_id,
                             "name": phrase,
@@ -189,36 +213,34 @@ def store_embeddings(node:dict, brain_id:str, embeddings:list):
                     )
                 ]
             )
-            logging.info("노드 %s descriptor %d 저장 완료(UUID: %s)", source_id, idx, pid)
         except Exception as e:
-            logging.error("Qdrant upsert 실패 (node: %s, idx: %d): %s", source_id, idx, str(e))
+            logging.error("Qdrant upsert failed (node: %s, idx: %d): %s", source_id, idx, str(e))
     
-
 def update_index_and_get_embeddings(nodes: List[Dict], brain_id: str) -> Dict[str, List[List[float]]]:
     """
-    노드 목록을 여러 표현 포맷으로 임베딩하고 Qdrant에 저장
+    Embeds a list of nodes into various representation formats and saves them to Qdrant
 
-    처리 순서:
-    1. 필수 필드 검증(source_id, name, descriptions)
-    2. description 유무에 따른 조건부 포맷 적용
-    3. encode_text로 임베딩
-    4. uuid5로 point_id 생성
-    5. Qdrant upsert로 벡터 및 payload 저장
+    Processing Order:
+    1. Validate required fields (source_id, name, descriptions)
+    2. Apply conditional formatting based on the presence of a description
+    3. Embed using encode_text
+    4. Generate point_id using uuid5
+    5. Save vector and payload using Qdrant upsert
 
     Args:
-        nodes: {source_id, name, descriptions} 포함 노드 리스트
-        brain_id: 브레인 고유 식별자
+        nodes: List of nodes containing {source_id, name, descriptions}
+        brain_id: Unique identifier for the brain
     Returns:
-        source_id별 생성된 벡터 리스트 딕셔너리
+        A dictionary of generated vector lists, keyed by source_id
     Notes:
-        - description이 비어있으면 name만으로 임베딩을 생성합니다.
-        - 동일 노드에서 포맷별로 다수 벡터가 생성될 수 있습니다.
-        - 예외 내구성을 높이기 위해 내부 단계를 try/except로 감싸고 로깅합니다.
+        - If description is empty, embeddings are generated using only the name.
+        - Multiple vectors can be generated for different formats from the same node.
+        - Internal steps are wrapped in try/except and logged for exception robustness.
     """
     collection_name = get_collection_name(brain_id)
     all_embeddings: Dict[str, List[List[float]]] = {}
 
-    # 사용할 표현 포맷 정의
+    # Define representation formats to use
     formats = [
         "{name} {description}",
         "{description}"
@@ -226,71 +248,71 @@ def update_index_and_get_embeddings(nodes: List[Dict], brain_id: str) -> Dict[st
 
     for node in nodes:
         try:
-            # 필수 키 확인
+            # Check for required keys
             if not all(k in node for k in ["source_id", "name", "descriptions"]):
-                logging.warning("필수 필드 누락된 노드: %s", node)
+                logging.warning("Node missing required fields: %s", node)
                 continue
 
             source_id = str(node["source_id"])
             name = str(node.get("name", "")).strip()
             
-            # 빈 이름 체크
+            # Check for empty name
             if not name:
-                logging.warning("빈 이름 필드: %s", source_id)
+                logging.warning("Empty name field: %s", source_id)
                 continue
 
             embeddings_for_node: List[List[float]] = []
 
-            # 각 description마다 포맷별 벡터 생성
+            # Generate vectors for each format per description
             for desc in node["descriptions"]:
                 try:
-                    # description 추출
+                    # Extract description
                     if isinstance(desc, dict):
                         description = (desc.get("description") or "").strip()
                     else:
                         description = str(desc).strip()
 
-                    # description 유무에 따른 포맷 선택
+                    # Select formats based on description presence
                     if description:
-                        # description이 있으면 두 포맷 모두 사용
+                        # If description exists, use both formats
                         active_formats = formats
                     else:
-                        # description이 없으면 첫 번째 포맷만 사용 (실제로는 name만)
+                        # If description is empty, use only the first format (effectively just the name)
                         active_formats = [formats[0]]  # "{name} {description}"
 
                     for idx, fmt in enumerate(active_formats):
                         try:
-                            # 텍스트 생성
+                            # Generate text
                             if description:
                                 text = fmt.format(name=name, description=description).strip()
                             else:
-                                # description이 없으면 name만 사용
+                                # If description is empty, use only the name
                                 text = name.strip()
                             
-                            # 최소 길이 체크
+                            # Check minimum length
                             if len(text) < 1:
-                                logging.debug("빈 텍스트 건너뛰기: %s", text)
+                                logging.debug("Skipping empty text: %s", text)
                                 continue
                                 
-                            logging.info("[임베딩 텍스트] %s", text)
+                            logging.info("[Embedding Text] %s", text)
 
-                            # 임베딩 생성 (예외 처리)
+                            # Generate embedding (with exception handling)
                             try:
                                 emb = encode_text(text)
                                 if not emb or len(emb) == 0:
-                                    logging.warning("임베딩 생성 실패: %s", text)
+                                    logging.warning("Failed to generate embedding: %s", text)
                                     continue
                             except Exception as e:
-                                logging.error("임베딩 생성 중 오류: %s - %s", text, str(e))
+                                logging.error("Error during embedding generation: %s - %s", text, str(e))
                                 continue
 
                             embeddings_for_node.append(emb)
 
-                            # 고유 point_id 생성 (해시 사용으로 길이 제한)
+                            # Generate unique point_id (using hash to limit length)
                             desc_hash = str(hash(description)) if description else "empty"
                             pid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{source_id}_{idx}_{desc_hash}"))
 
-                            # Qdrant에 upsert (예외 처리)
+                            # Upsert to Qdrant (with exception handling)
                             try:
                                 client.upsert(
                                     collection_name=collection_name,
@@ -308,29 +330,29 @@ def update_index_and_get_embeddings(nodes: List[Dict], brain_id: str) -> Dict[st
                                         )
                                     ]
                                 )
-                                logging.info("노드 %s descriptor %d 저장 완료(UUID: %s)", source_id, idx, pid)
+                                logging.info("Node %s descriptor %d saved successfully (UUID: %s)", source_id, idx, pid)
                             except Exception as e:
-                                logging.error("Qdrant upsert 실패 (node: %s, idx: %d): %s", source_id, idx, str(e))
+                                logging.error("Qdrant upsert failed (node: %s, idx: %d): %s", source_id, idx, str(e))
                                 continue
 
                         except Exception as e:
-                            logging.error("포맷 %d 처리 중 오류 (node: %s): %s", idx, source_id, str(e))
+                            logging.error("Error processing format %d (node: %s): %s", idx, source_id, str(e))
                             continue
                             
                 except Exception as e:
-                    logging.error("Description 처리 중 오류 (node: %s): %s", source_id, str(e))
+                    logging.error("Error processing description (node: %s): %s", source_id, str(e))
                     continue
 
             if embeddings_for_node:
                 all_embeddings[source_id] = embeddings_for_node
             else:
-                logging.warning("노드 %s에 대한 임베딩이 생성되지 않음", source_id)
+                logging.warning("No embeddings generated for node %s", source_id)
                 
         except Exception as e:
-            logging.error("노드 %s 전체 처리 중 오류: %s", node.get("source_id", "unknown"), str(e))
+            logging.error("Error processing entire node %s: %s", node.get("source_id", "unknown"), str(e))
             continue
 
-    logging.info("컬렉션 %s에 %d개의 노드 임베딩 저장 완료", collection_name, len(all_embeddings))
+    logging.info("Saved %d node embeddings to collection %s", len(all_embeddings), collection_name)
     return all_embeddings
 
 

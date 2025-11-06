@@ -21,9 +21,9 @@ stopwords = set([
     "사실", "경우", "시절", "내용", "점", "것", "수", "때", "정도", "이유", "상황", "뿐", "매우", "아주", "또한", "그리고", "그러나", "대한", "관한"
 ])
 
-stopwords_en= set([
+stopwords_en= [
     "the", "an", "which", "they", "this", "you", "me"
-])
+]
 
 
 # 한국어용 형태소 분석기
@@ -122,8 +122,8 @@ def compute_scores(
     phrase_embeddings = {}
     central_vecs = []
 
-    # Embed sentences where each keyword appears, then average them to create a semantic vector for each keyword.
-    # Also, calculates the tf score for each keyword (Note: TF-IDF is retrieved from the input dict).
+    # Generate a semantic vector for each keyword by embedding the sentences where it appears and then averaging them.
+    # Also, prepare to calculate the tf score for each keyword.
     with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [
                 executor.submit(compute_phrase_embedding, phrase, indices, sentences, lang)
@@ -136,22 +136,30 @@ def compute_scores(
                 all_embeddings[phrase]=embedded_vec
                 central_vecs.append(avg_emb)
 
-    # Calculate the central vector representing the chunk's topic by averaging the embedding values of all sentences in the chunk.
+    # Calculate the central vector, representing the chunk's topic, by averaging the embedding values of all sentences in the chunk.
     central_vec = np.mean(central_vecs, axis=0)
 
     # Calculate the centrality score for each keyword by computing similarity with the central vector.
-    # Finally, calculate the importance score of each keyword by multiplying with the tf score.
-    # The top 5 keywords by importance score will be selected as nodes (Note: This function provides scores; selection happens elsewhere).
+    # Multiply by the tf score to finalize the importance score for each keyword.
+    # The top 5 keywords by importance score will be selected as nodes.
     phrases = list(phrase_embeddings.keys())
     tf_list = []
     emb_list = []
-
-    for phrase in phrases:
-        emb = phrase_embeddings[phrase]
-        tf_adj = tfidf[phrase] * cosine_similarity([emb], [central_vec])[0][0]
-        scores[phrase] = [tf_adj, emb]
-        tf_list.append(tf_adj)
-        emb_list.append(emb)
+    if tfidf != []:
+        for phrase in phrases:
+            emb = phrase_embeddings[phrase]
+            tf_adj = tfidf.get(phrase, 0) * cosine_similarity([emb], [central_vec])[0][0]
+            scores[phrase] = [tf_adj, emb]
+            tf_list.append(tf_adj)
+            emb_list.append(emb)
+    else:
+        tf_scores=get_tf_score(phrase_info, len(sentences))
+        for phrase in phrases:
+            emb = phrase_embeddings[phrase]
+            tf_adj = tf_scores[phrase] * cosine_similarity([emb], [central_vec])[0][0]
+            scores[phrase] = [tf_adj, emb]
+            tf_list.append(tf_adj)
+            emb_list.append(emb)
 
     emb_array = np.stack(emb_list)
     sim_matrix = cosine_similarity(emb_array)
@@ -203,7 +211,7 @@ def group_phrases(
 
 def make_edges(sentences:list[str], source_keyword:str, target_keywords:list[str], phrase_info):
     """
-    Takes the root node (source keyword) and surrounding nodes (target keywords - multiple) as input,
+    Takes a root node (source keyword) and surrounding nodes (target keywords, plural) as input,
     and generates edges between them.
     """
     edges=[]
@@ -228,27 +236,25 @@ def make_edges(sentences:list[str], source_keyword:str, target_keywords:list[str
             
             if cnt==0:
                 edges.append({"source":source_keyword, 
-                    "target":t,
-                    "relation":"Related"})
-        
+                        "target":t,
+                        "relation":"Related"})
+    
     return edges
 
-
-def make_node(name, phrase_info, sentences:list[str], id:tuple, embeddings):
+def make_node(name, s_indices, sentences:list[str], id:tuple, embeddings):
     """
-    Creates a node by taking the keyword to create a node and the keyword's appearance locations as input.
-    args:    name: The keyword to create the node for
-             phrase_info: The appearance indices for the keyword
-             sentences: A list of strings, the full text split into sentences
-             source_id: The unique source_id of the input document
+    Creates a node given a keyword and its occurrence locations (indices).
+    args:   name: The keyword to create a node for.
+            s_indices: The list of indices where the keyword appears.
+            sentences: A list of strings (sentences) from the full text.
+            id: tuple containing (brain_id, source_id)
     """
     description=[]
     ori_sentences=[]
-    s_indices=[idx for idx in phrase_info[name]]
     brain_id, source_id=id
 
-    if len(s_indices)<=2:
-        for idx in s_indices:
+    if len(s_indices)!=0:
+        for idx in s_indices[:min(len(s_indices),5)]:
             description.append({"description":sentences[idx],
                                 "source_id":source_id})
             ori_sentences.append({"original_sentence":sentences[idx],
@@ -468,3 +474,10 @@ def _extract_from_chunk(phrases:list[list[str]], sentences: list[str], id:tuple 
 def check_lang(text:str):
     lang, _ =langid.classify(text)
     return lang
+
+def get_tf_score(phrase_info:dict, total_sentences:int):
+    tf_scores = defaultdict(set)
+    for p in phrase_info.keys():
+        tf_scores[p] = len(phrase_info[p]) / total_sentences
+    
+    return tf_scores

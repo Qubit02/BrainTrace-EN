@@ -29,9 +29,9 @@ from .node_gen_ver5 import _extract_from_chunk
 from .node_gen_ver5 import split_into_tokenized_sentence
 from .node_gen_ver5 import store_embeddings
 
-stopwords_en= set([
+stopwords_en= [
     "the", "an", "which", "they", "this", "you", "me", "I"
-])
+]
 
 
 def extract_keywords_by_tfidf(tokenized_chunks: list[list[str]]):
@@ -477,6 +477,7 @@ def extract_graph_components(text: str, id: tuple):
     chunks=[]
     
     tokenized, sentences = split_into_tokenized_sentence(text)
+
 
     # If the text is 2000 characters or longer, call the recursive chunking function
     if len(text)>=2000:
