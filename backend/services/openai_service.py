@@ -140,183 +140,6 @@ class OpenAIService(BaseAIService) :
             logging.error(traceback.format_exc())
             return []
 
-    def extract_graph_components(self,text: str, source_id: str):
-        """
-        입력 텍스트에서 LLM을 활용해 노드와 엣지 정보를 추출합니다.
-        텍스트가 2000자 이상인 경우 청킹하여 처리합니다.
-        반환 형식: (nodes: list, edges: list)
-        """
-        # 모든 노드와 엣지를 저장할 리스트
-        all_nodes = []
-        all_edges = []
-        
-        # 텍스트가 2000자 이상이면 청킹
-        if len(text) >= 2000:
-            # 규칙 기반 수동 청킹(문장 단위)을 사용
-            chunks = manual_chunking(text)
-            logging.info(f"✅ 텍스트가 {len(chunks)}개의 청크로 분할되어 처리됩니다.")
-            
-            # 각 청크별로 노드와 엣지 추출
-            for i, chunk in enumerate(chunks, 1):
-                logging.info(f"청크 {i}/{len(chunks)} 처리 중...")
-                nodes, edges = self._extract_from_chunk(chunk, source_id)
-                all_nodes.extend(nodes)
-                all_edges.extend(edges)
-        else:
-            # 2000자 미만이면 직접 처리
-            all_nodes, all_edges = self._extract_from_chunk(text, source_id)
-        
-        # 중복 제거
-        all_nodes = self._remove_duplicate_nodes(all_nodes)
-        all_edges = self._remove_duplicate_edges(all_edges)
-        
-        logging.info(f"✅ 총 {len(all_nodes)}개의 노드와 {len(all_edges)}개의 엣지가 추출되었습니다.")
-        return all_nodes, all_edges
-
-    def _extract_from_chunk(self, chunk: str, source_id: str):
-        """개별 청크에서 노드/엣지 정보를 추출하고 보강(original_sentences)합니다.
-
-        처리 단계:
-          1) 프롬프트 구성 → OpenAI 호출(응답을 JSON으로 강제)
-          2) 노드 필수 필드 검증/정규화 + description → descriptions로 이동, source_id 주입
-          3) 엣지의 source/target 검증(노드 name 참조)
-          4) 문장 단위 청킹 후 임베딩 계산, description과의 유사도로 original_sentences 구성
-        """
-        prompt = (
-        "다음 텍스트를 분석해서 노드와 엣지 정보를 추출해줘. "
-        "노드는 { \"label\": string, \"name\": string, \"description\": string } 형식의 객체 배열, "
-        "엣지는 { \"source\": string, \"target\": string, \"relation\": string } 형식의 객체 배열로 출력해줘. "
-        "여기서 source와 target은 노드의 name을 참조해야 하고, source_id는 사용하면 안 돼. "
-        "출력 결과는 반드시 아래 JSON 형식을 준수해야 해:\n"
-        "{\n"
-        '  "nodes": [ ... ],\n'
-        '  "edges": [ ... ]\n'
-        "}\n"
-        "문장에 있는 모든 개념을 노드로 만들어줘"
-        "각 노드의 description은 해당 노드를 간단히 설명하는 문장이어야 해. "
-        "만약 텍스트 내에 하나의 긴 description에 여러 개념이 섞여 있다면, 반드시 개념 단위로 나누어 여러 노드를 생성해줘. "
-        "description은 하나의 개념에 대한 설명만 들어가야 해"
-        "노드의 label과 name은 한글로 표현하고, 불필요한 내용이나 텍스트에 없는 정보는 추가하지 말아줘. "
-        "노드와 엣지 정보가 추출되지 않으면 빈 배열을 출력해줘.\n\n"
-        "json 형식 외에는 출력 금지"
-        f"텍스트: {chunk}"
-        )
-        try:
-            # 응답 포맷을 JSON으로 강제하여 파싱 안정성 확보
-            completion = client.chat.completions.create(
-                model=self.model_name,  # 동적 모델 선택
-                messages=[
-                    {"role": "system", "content": "너는 텍스트에서 구조화된 노드와 엣지를 추출하는 전문가야. 엣지의 source와 target은 반드시 노드의 name을 참조해야 해."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=5000,
-                temperature=0.3,
-                # JSON만 돌려주도록 강제
-                response_format={"type": "json_object"}
-            )
-
-            # print("response: ", response)
-            # data = json.loads(response)
-            # print("data: ", data)
-            # ⬇️  문자열만 추출!
-            content = completion.choices[0].message.content.strip()
-            data = json.loads(content)
-                
-                
-            # 각 노드에 source_id 추가 및 구조 검증
-            valid_nodes = []
-            for node in data.get("nodes", []):
-                # 필수 필드 검증
-                if not all(key in node for key in ["label", "name"]):
-                    logging.warning("필수 필드가 누락된 노드: %s", node)
-                    continue
-
-                # descriptions 필드 초기화
-                if "descriptions" not in node:
-                    node["descriptions"] = []
-                    
-                # source_id 추가
-                node["source_id"] = source_id
-                
-                # description 처리
-                if "description" in node:
-                    node["descriptions"].append({
-                        "description": node["description"],
-                        "source_id": source_id  # 각 description에도 source_id 추가
-                    })
-                    del node["description"]
-                    
-                valid_nodes.append(node)
-            
-            # 엣지의 source와 target이 노드의 name을 참조하는지 검증
-            valid_edges = []
-            node_names = {node["name"] for node in valid_nodes}
-            for edge in data.get("edges", []):
-                if "source" in edge and "target" in edge and "relation" in edge:
-                    if edge["source"] in node_names and edge["target"] in node_names:
-                        valid_edges.append(edge)
-                    else:
-                        logging.warning("잘못된 엣지 참조: %s", edge)
-                else:
-                    logging.warning("필수 필드가 누락된 엣지: %s", edge)
-
-             # 1) 문장 단위 분리(의미에 따라서 여러문장일 수도 있음)
-            sentences = manual_chunking(chunk)   # List[str]
-            logging.warning("청킹된 문장: %s", sentences)
-            if not sentences:
-                # 빈 sentences인 경우에도 original_sentences 필드 추가
-                for node in valid_nodes:
-                    node["original_sentences"] = []
-                return valid_nodes, valid_edges
-
-            # 2) 모든 문장 임베딩 (한 번만)
-            sentence_embeds = np.vstack([encode_text(s) for s in sentences])  # (num_sentences, dim)
-
-            # 3) 노드별로 original_sentences 계산
-            threshold = 0.8
-        
-            for node in valid_nodes:
-                # node["descriptions"] 에는 반드시 1개의 딕셔너리가 들어있다고 가정
-                desc_obj = node["descriptions"][0]
-                desc_text = desc_obj["description"]
-                desc_src  = desc_obj["source_id"]
-                desc_text_full = f"{node['name']} - {desc_text}"
-                # 3-1) name-description 형태로 임베딩
-                desc_vec = np.array(encode_text(desc_text)).reshape(1, -1)  # (1, dim)
-
-                # 3-2) 문장 × 설명 유사도 계산
-                sim_scores = cosine_similarity(sentence_embeds, desc_vec).flatten()  # (num_sentences,)
-                # 0.75 이상 문장 인덱스·점수 모으기
-                above = [(i, score) for i, score in enumerate(sim_scores) if score >= threshold]
-                # 3-3) threshold 이상인 문장만 모아서 original_sentences 에 저장
-                node_originals = []
-                
-                if above:
-                    # 0.8 이상인 모든 문장 추가
-                    for i, score in above:
-                        node_originals.append({
-                            "original_sentence": sentences[i],
-                            "source_id":        desc_src,
-                            "score":            round(float(score), 4)
-                        })
-                else:
-                    # 0.8 미만 중 최고점 문장 하나만 추가
-                    best_i = int(np.argmax(sim_scores))
-                    node_originals.append({
-                        "original_sentence": sentences[best_i],
-                        "source_id":        desc_src,
-                        "score":            round(float(sim_scores[best_i]), 4)
-                    })
-
-
-                # 3-4) 각 node에 필드로 추가
-                node["original_sentences"] = node_originals
-
-            return valid_nodes, valid_edges 
-        except Exception as e:
-            logging.error(f"청크 처리 중 오류 발생: {str(e)}")
-            return [], []
-
     def _remove_duplicate_nodes(self, nodes: list) -> list:
         """중복된 노드를 제거합니다.
 
@@ -354,17 +177,15 @@ class OpenAIService(BaseAIService) :
         logging.info("🚀 OpenAI API 호출 - 모델: %s", self.model_name)
         
         prompt = (
-        "다음 지식그래프 컨텍스트와 질문을 바탕으로, 컨텍스트에 명시된 정보나 연결된 관계를 통해 추론 가능한 범위 내에서만 자연어로 답변해줘. "
-        "정보가 일부라도 있다면 해당 범위 내에서 최대한 설명하고, 컨텍스트와 완전히 무관한 경우에만 '지식그래프에 해당 정보가 없습니다.'라고 출력해. "
-        "지식그래프 컨텍스트 형식:\n"
-        "1. [관계 목록] start_name -> relation_label -> end_name\n (모든 노드가 관계를 가지고 있는 것은 아님)"
-        "2. [노드 목록] NODE: {node_name} | DESCRIPTION: {desc_str}\n"
-        "지식그래프 컨텍스트:\n" + schema_text + "\n\n"
-        "질문: " + question + "\n\n"
-        "출력 형식:\n"
-        "[여기에 질문에 대한 상세 답변 작성 또는 '지식그래프에 해당 정보가 없습니다.' 출력]\n"
-
-        )
+            "Please answer the question below in natural language, using only the information explicitly provided in the knowledge graph context or that can be reasonably inferred from the relationships. "
+            "If relevant information exists, explain it as fully as possible. If the context provides no relevant information, respond with: 'The knowledge graph does not contain this information.'"
+            "Knowledge Graph Context Format:\n"
+            "1. Relationships: start_name -> relation_label -> end_name\n"
+            "2. Nodes: NODE: {node_name} | DESCRIPTION: {desc_str}"
+            "Knowledge Graph Context:\n{schema_text}\n"
+            "Question: {question}\n"
+            "Output:\n[Provide a detailed answer based on the knowledge graph, or write 'The knowledge graph does not contain this information.']"
+            )
 
 
         try:
