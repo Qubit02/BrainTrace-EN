@@ -462,7 +462,7 @@ async def get_source_content(source_id: str, brain_id: str):
 2. **Topic Vector Conversion & Similarity Calculation**: Converts each sentence into a topic vector and calculates the similarity between vectors, storing them in a matrix.
 
    ```python
-   # backend/services/manual_chunking_sentences.py (발췌)
+   # backend/services/manual_chunking_sentences.py (Exerpt)
    def lda_keyword_and_similarity(chunk:list[dict]):
     """
     Uses gensim's LDA model to extract topic keywords from the chunk
@@ -564,54 +564,54 @@ async def get_source_content(source_id: str, brain_id: str):
 
    ```python
    # backend/services/manual_chunking_sentences.py (Excerpt)
-def extract_keywords_by_tfidf(tokenized_chunks: list[list[str]]):
-    """Extracts top TF-IDF keywords from a list of tokenized chunks.
-
-    Args:
-        tokenized_chunks: A list of token lists for each group.
-
-    Returns:
-        all_sorted_keywords: A list of keyword lists for each group.
-    """
-    # 1. Define Vectorizer
-    vectorizer = TfidfVectorizer(
-        stop_words=stop_words,
-        max_features=1000,
-        tokenizer=lambda x: x,      # Use the input (token list) as is
-        preprocessor=lambda x: x,  # Skip preprocessing
-        token_pattern=None,        # Prevent warning
-        lowercase=False            # Prevents 'list' object has no attribute 'lower' error when skipping preprocessing/tokenization
-    )
-    # 2. Calculate TF-IDF
-    try:
-        tfidf_matrix = vectorizer.fit_transform(tokenized_chunks)
-    except ValueError as e:
-        # Case where all documents consist of stop words or are empty, resulting in an empty vocabulary
-        if "empty vocabulary" in str(e):
-            return [[] for _ in tokenized_chunks]
-        else:
-            raise e
-
-    feature_names = vectorizer.get_feature_names_out()
-
-    # 3. Sort keywords by group
-    all_sorted_keywords = []
-    for i in range(tfidf_matrix.shape[0]):
-        row = tfidf_matrix[i].toarray().flatten()
-
-        # Sort indices in descending order of TF-IDF score
-        sorted_indices = row.argsort()[::-1]
-
-        # Add 'all' keywords with a score greater than 0, in order
-        sorted_keywords = [
-            feature_names[j] 
-            for j in sorted_indices  # Removed top_n slicing
-            if row[j] > 0            # Exclude words with a score of 0
-        ]
-
-        all_sorted_keywords.append(sorted_keywords)
-
-    return all_sorted_keywords
+   def extract_keywords_by_tfidf(tokenized_chunks: list[list[str]]):
+       """Extracts top TF-IDF keywords from a list of tokenized chunks.
+   
+       Args:
+           tokenized_chunks: A list of token lists for each group.
+   
+       Returns:
+           all_sorted_keywords: A list of keyword lists for each group.
+       """
+       # 1. Define Vectorizer
+       vectorizer = TfidfVectorizer(
+           stop_words=stop_words,
+           max_features=1000,
+           tokenizer=lambda x: x,      # Use the input (token list) as is
+           preprocessor=lambda x: x,  # Skip preprocessing
+           token_pattern=None,        # Prevent warning
+           lowercase=False            # Prevents 'list' object has no attribute 'lower' error when skipping preprocessing/tokenization
+       )
+       # 2. Calculate TF-IDF
+       try:
+           tfidf_matrix = vectorizer.fit_transform(tokenized_chunks)
+       except ValueError as e:
+           # Case where all documents consist of stop words or are empty, resulting in an empty vocabulary
+           if "empty vocabulary" in str(e):
+               return [[] for _ in tokenized_chunks]
+           else:
+               raise e
+   
+       feature_names = vectorizer.get_feature_names_out()
+   
+       # 3. Sort keywords by group
+       all_sorted_keywords = []
+       for i in range(tfidf_matrix.shape[0]):
+           row = tfidf_matrix[i].toarray().flatten()
+   
+           # Sort indices in descending order of TF-IDF score
+           sorted_indices = row.argsort()[::-1]
+   
+           # Add 'all' keywords with a score greater than 0, in order
+           sorted_keywords = [
+               feature_names[j] 
+               for j in sorted_indices  # Removed top_n slicing
+               if row[j] > 0            # Exclude words with a score of 0
+           ]
+   
+           all_sorted_keywords.append(sorted_keywords)
+   
+       return all_sorted_keywords
     ```
 
 For a more detailed explanation of the knowledge graph, please see KNOWLEDGE_GRAPH.md.
