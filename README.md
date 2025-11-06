@@ -1,6 +1,6 @@
 <img width="3000" height="500" alt="Brain Trace (3)" src="https://github.com/user-attachments/assets/8f92baaa-158e-4475-b34a-5f1f440649ac" />
 
-<p align="center"><i>A Knowledge Management System Utilizing Knowledge Graphs</i></p>
+<p align="center"><i>A Knowledge Management System based on GraphRAG</i></p>
 
 Brain Trace System (BrainT) converts documents of various formats, such as PDF, TXT, DOCX, and Markdown, into a knowledge graph through a GraphRAG pipeline upon upload. It extracts key concepts and their relationships from the documents, organizing them into a node-edge structure. Based on this, it provides inferential search, source tracing, and visual exploration within a single, streamlined flow.
 
