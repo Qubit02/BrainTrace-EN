@@ -2,11 +2,19 @@
 
 <p align="center"><i>A Knowledge Management System Utilizing Knowledge Graphs</i></p>
 
+<<<<<<< HEAD
 Brain Trace System (BrainT) converts documents of various formats, such as PDF, TXT, DOCX, and Markdown, into a knowledge graph through a GraphRAG pipeline upon upload. It extracts key concepts and their relationships from the documents, organizing them into a node-edge structure. Based on this, it provides inferential search, source tracing, and visual exploration within a single, streamlined flow.
 
 When a user inputs a query, BrainT identifies relevant concepts from the knowledge graph to form context. It then retrieves similar document chunks to generate a Q&A response grounded in both this context and supporting evidence. This entire process can be operated selectively in either local or cloud environments, allowing for flexible configuration as needed and supporting security-friendly operation where information does not leave internal servers.
 
 As more documents are added, the graph becomes increasingly sophisticated, and both search and exploration grow smarter. Scattered information becomes organically connected, allowing knowledge not just to accumulate, but to evolve into a structured, living entity.
+=======
+Brain Trace System (BrainT)는 사용자가 업로드한 PDF, TXT, DOCX, Markdown 문서에서 핵심 개념과 개념 간의 관계를 자동으로 추출하고, 이를 지식 그래프 형태로 저장하여 활용하는 시스템입니다. 문서 내용을 단순히 저장하는 것을 넘어, 개념 단위로 구조화하여 탐색하고 활용할 수 있도록 돕습니다.
+
+사용자가 질문을 입력하면, 시스템은 지식 그래프에서 관련된 개념들을 중심으로 의미 있는 노드들을 탐색하고, 필요 시 문서 내 해당 개념이 포함된 부분(청크)을 함께 가져와, 문서 기반의 답변을 제공합니다. 이때, 답변은 단순한 키워드 검색이 아닌, 그래프 구조를 따라 의미를 이해하고 연결하는 방식으로 생성됩니다. 또한, 기능을 로컬 또는 클라우드의 구동 환경을 선택하여 실행할 수 있으며, 외부 서버와의 연결 없이도 작동하므로 보안에 민감한 환경에서도 사용할 수 있습니다. 
+
+문서를 계속 추가할수록 그래프는 더욱 정교해지고, 검색과 탐색의 깊이와 정확성도 함께 향상됩니다. 흩어져 있던 정보들이 유기적으로 연결되며, 지식은 단순히 쌓이는 것을 넘어 구조화되고 유의미하게 진화하는 형태로 재탄생합니다.
+>>>>>>> 9ab7f2c80224a011de19833558ce26995310c321
 
 ---
 

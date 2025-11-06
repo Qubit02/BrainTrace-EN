@@ -1,20 +1,21 @@
 """
-재귀적 청킹 및 그래프 뼈대 생성모듈
-----------------------------------------
+Recursive Chunking and Graph Backbone Generation Module
+------------------------------------------------------
 
-이 모듈은 규칙 기반(수동)으로 텍스트를 문장 단위로 분할/토큰화하고,
-LDA/TF-IDF/인접 유사도 등을 활용해 재귀적으로 청킹하여 키워드 노드/엣지를 생성합니다.
+This module splits/tokenizes text into sentences using a rule-based (manual) approach,
+and recursively chunks it using LDA/TF-IDF/adjacency similarity, etc.,
+to generate keyword nodes/edges.
 
-구성 요소 개요:
-- `extract_keywords_by_tfidf`: 각 청크 토큰에서 TF-IDF 상위 키워드 추출
-- `lda_keyword_and_similarity`: LDA를 통해 전체/부분 토픽 추정 및 토픽 분포 유사도 행렬 계산
-- `recurrsive_chunking`: 유사도 기반 재귀 청킹(종료 조건/깊이/토큰 수 등 고려)
-- `extract_graph_components`: 전체 파이프라인 실행 → 노드/엣지 구축
-- `manual_chunking`: 소스 없는(-1) 케이스에 대한 청킹 결과만 반환
+Component Overview:
+- `extract_keywords_by_tfidf`: Extracts top TF-IDF keywords from each chunk's tokens
+- `lda_keyword_and_similarity`: Estimates full/partial topics via LDA and calculates the topic distribution similarity matrix
+- `recurrsive_chunking`: Similarity-based recursive chunking (considers termination conditions/depth/token count, etc.)
+- `extract_graph_components`: Executes the entire pipeline -> Builds nodes/edges
+- `manual_chunking`: Returns only chunking results for source-less (-1) cases
 
-주의:
-- 형태소 분석기(Okt), gensim LDA 등 외부 라이브러리에 의존합니다. 대형 텍스트에서는 시간이 소요될 수 있습니다.
-- 재귀 청킹은 종료 조건(depth, 토큰 수, 유사도 행렬 유효성 등)을 통해 무한 분할을 방지합니다.
+Notes:
+- Depends on external libraries such as morphological analyzers (Okt) and gensim LDA. It may take time on large texts.
+- Recursive chunking prevents infinite division through termination conditions (depth, token count, similarity matrix validity, etc.).
 """
 
 import logging
@@ -83,7 +84,6 @@ def extract_keywords_by_tfidf(tokenized_chunks: list[list[str]]):
        return all_sorted_keywords
 
 
-# backend/services/manual_chunking_sentences.py (Excerpt)
 def grouping_into_smaller_chunks(chunk:list[int], similarity_matrix:np.ndarray, threshold:int):
     """
     Creates smaller groups from the input group based on a threshold.
@@ -132,22 +132,22 @@ def grouping_into_smaller_chunks(chunk:list[int], similarity_matrix:np.ndarray, 
 
 def check_termination_condition(chunk: list[dict], depth:int):
     """
-    재귀함수의 종료 조건 달성 여부를 체크하고 flag를 반환합니다.
-        flag 1: chunk가 세 문장 이하이거나 chunk의 크기가 20토큰 이하인 경우
-        flag 2: depth 5 이상이고 chunk 크기가 500 토큰 이하인 경우
-        flag 3: depth 5 이상이고 chunk 크리가 500 토큰 초과일 경우
+    Checks if the termination condition for the recursive function is met and returns a flag.
+        flag 1: chunk size is 15 tokens or less
+        flag 2: depth is 5 or more and chunk size is 500 tokens or less
+        flag 3: depth is 5 or more and chunk size exceeds 500 tokens
 
     """
     flag=-1
     size = sum([len(c["tokens"]) for c in chunk])
-    # flag 1:chunk가 다섯 문장 이하이거나 chunk의 크기가 20토큰 이하인 경우 더 이상 쪼개지 않음
-    if len(chunk)<=5 or size<=50:
+    # flag 1: If the chunk size is 15 tokens or less, do not split further
+    if size<=15:
         flag=1
     
-    #depth가 5 이상일 경우 더 깊이 탐색하지 않음
+    # If depth is 5 or more, do not search deeper
     if(depth >= 5):
         flag=2
-        #depth가 5이상이지만 크기가 500토큰 이상일 경우 유사도를 기반으로 5개까지 쪼갬
+        # If depth is 5 or more but size is over 500 tokens, split up to 5 times based on similarity (flag 3 logic)
         if (size>500):
             flag=3
 
@@ -188,19 +188,19 @@ def nonrecurrsive_chunking(chunk:list[dict], similarity_matrix:np.ndarray, top_k
 
 def gen_node_edges_for_new_groups(chunk:list[dict], new_chunk_groups, top_keyword, already_made, source_id):
     """
-    인덱스 리스트로 표현된 그룹들을 다음 재귀 호출을 위한 청크의 형식으로 변환합니다.
-    각 청크의 키워드를 추출하여 노드를 생성합니다.
-    생성된 노드들을 현재 depth의 키워드 노드와 연결하는 엣지를 생성합니다.
+    Converts groups, represented as index lists, into the chunk format for the next recursive call.
+    Extracts keywords from each chunk to create nodes.
+    Creates edges connecting the generated nodes to the keyword node of the current depth.
 
     Args:
-        chunk: 현재 depth의 전체 청크 정보
-        new_chunk_groups: 문장 인덱스 리스트로 표현된 새롭게 생성된 그룹 정보
-        already_made: 이미 생성된 노드 이름들을 저장한 리스트
+        chunk: Full chunk information for the current depth.
+        new_chunk_groups: Newly generated group information represented as a list of sentence indices.
+        already_made: A list storing the names of already created nodes.
     """
 
-    # new_chunk_gorup에 저장된 문장 인덱스를 바탕으로 go_chunk와 get_topics를 생성
-    # go_chunk는 다시 한 번 chunking하기 위해 제귀적으로 호출되는 함수의 argument
-    # get_topics는 또한 새롭게 나눠진 chunk group들의 핵심 키워드 추출을 위한 함수의 argument
+    # Generate go_chunk and get_topics based on the sentence indices stored in new_chunk_group
+    # go_chunk is the argument for the recursively called function to perform chunking again
+    # get_topics is the argument for the function to extract core keywords from the newly divided chunk groups
     go_chunk = []
     get_topics = []
     for group in new_chunk_groups:
@@ -213,44 +213,43 @@ def gen_node_edges_for_new_groups(chunk:list[dict], new_chunk_groups, top_keywor
         get_topics.append(get_topics_temp)
 
 
-    # 이번 단계 chunking 결과를 바탕으로 노드와 엣지를 제작
+    # Create nodes and edges based on the chunking results from this step
     keywords=[]
     nodes=[]
     edges=[]
 
     chunk_topics=extract_keywords_by_tfidf(get_topics)
-    # tf-idf방식으로 추출한 topic keyword 중 중복없이 하나를 뽑아 각 chunk의 대표 키워드로 삼는다
-    # 각 chunk의 대표 키워드로 노드를 생성한다
+    # Select one non-duplicate topic keyword extracted via TF-IDF as the representative keyword for each chunk
+    # Create a node with the representative keyword of each chunk
     for idx, topics in enumerate(chunk_topics):
         for t_idx in range(len(topics)):
-            #토픽 키워드가 이미 노드가 생성된 키워드가 아니면 노드를 생성
+            # If the topic keyword is not an already created node keyword, create a node
             if topics[t_idx] not in already_made:
-                #토픽 키워드가 파생된 문장의 길이가 15토큰 이하이면 문장을 description으로 저장
+                # If the length of the sentences from which the topic keyword is derived is 15 tokens or less, save the sentences as the description
                 if sum([len(sentence["tokens"]) for sentence in go_chunk[idx]])< 15:
                     chunk_node={"label":topics[t_idx],"name":topics[t_idx],
                                 "descriptions":[c["index"] for c in go_chunk[idx]],
                                 "source_id":source_id}
-                    edge={"source": top_keyword, "target": topics[t_idx], "relation":"related"}
+                    edge={"source": top_keyword, "target": topics[t_idx], "relation":"Related"}
                     keywords.append(topics[t_idx])
-                #토픽 키워드가 파생된 문장의 길이가 길면 description이 빈 노드를 생성
+                # If the length of the sentences from which the topic keyword is derived is long, create a node with an empty description
                 else:
                     connective_node=topics[t_idx]+"*"
                     chunk_node={"label":topics[t_idx],"name":connective_node,"descriptions":[], "source_id":source_id}
-                    edge={"source": top_keyword, "target": connective_node, "relation":"related"}
+                    edge={"source": top_keyword, "target": connective_node, "relation":"Related"}
                     keywords.append(connective_node)
                 nodes.append(chunk_node)
                 edges.append(edge)
                 already_made.append(topics[t_idx])
                 break
     
-    #키워드 중복 등으로 인하여 토픽 키워드의 개수가 chunk의 개수보다 적을 경우
+    # If the number of topic keywords is less than the number of chunks due to keyword duplication, etc.
     check_num_t=len(go_chunk)-len(keywords)
     if check_num_t > 0:
         keywords+=check_num_t*["none"]
 
     
     return nodes, edges, go_chunk, keywords
-
 
 
 def recurrsive_chunking(chunk: list[int], source_id:str ,depth: int, top_keyword:str ,already_made:list[str], similarity_matrix, threshold: int):
@@ -404,14 +403,15 @@ def lda_keyword_and_similarity(chunk:list[dict]):
 
     return top_keyword, sim_matrix
 
+
 def all_chunks_tf_idf_(tokenized_chunks:list[list[list[str]]]):
     vectorizer = TfidfVectorizer(
         stop_words=stopwords_en,
-        max_features=1000,
-        tokenizer=lambda x: x,      # 입력(토큰 리스트)을 그대로 사용
-        preprocessor=lambda x: x,   # 전처리 생략
-        token_pattern=None,         # 경고 방지
-        lowercase=False             # 전처리/토큰화를 생략할 시 'list' object has no attribute 'lower' 에러 방지
+        max_features=5000,
+        tokenizer=lambda x: x,      # Use the input (token list) as is
+        preprocessor=lambda x: x,  # Skip preprocessing
+        token_pattern=None,        # Prevent warning
+        lowercase=False            # Prevents 'list' object has no attribute 'lower' error when skipping preprocessing/tokenization
     )
     flattened_chunks = []
     for chunk in tokenized_chunks:
@@ -423,26 +423,26 @@ def all_chunks_tf_idf_(tokenized_chunks:list[list[list[str]]]):
         tfidf_matrix = vectorizer.fit_transform(flattened_chunks)
 
     except ValueError as e:
-        # 모든 문서가 불용어이거나 비어있어 vocabulary가 없는 경우
+        # Case where all documents consist of stop words or are empty, resulting in an empty vocabulary
         if "empty vocabulary" in str(e):
             return [[] for _ in tokenized_chunks]
         else:
             raise e
         
-    # 1. 전체 고유 토큰(feature) 리스트를 가져옵니다.
+    # 1. Get the list of all unique tokens (features).
     feature_names = vectorizer.get_feature_names_out()
     
-    # 2. 결과를 저장할 리스트
+    # 2. List to store the results.
     tfidf_results = []
 
-    # 3. tfidf_matrix를 한 행씩 순회합니다.
-    #    각 row는 하나의 그룹에 해당합니다.
+    # 3. Iterate through the tfidf_matrix one row at a time.
+    #    Each row corresponds to one group.
     for i in range(tfidf_matrix.shape[0]):
         row = tfidf_matrix[i]
         
-        # 4. 해당 row(문서)에만 존재하는 토큰들의 점수 사전을 만듭니다.
-        #    row.indices: 이 문서에 존재하는 토큰들의 (feature_names에서의) 인덱스
-        #    row.data: 해당 토큰들의 TF-IDF 점수
+        # 4. Create a dictionary of scores for tokens that exist only in this row (document).
+        #    row.indices: Indices (in feature_names) of tokens present in this document.
+        #    row.data: The TF-IDF scores for those tokens.
         chunk_dict = {
             feature_names[col_idx]: score
             for col_idx, score in zip(row.indices, row.data)

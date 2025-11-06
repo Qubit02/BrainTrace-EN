@@ -1,21 +1,4 @@
-"""
-청크로부터 노드&엣지 생성모듈
-----------------------------------------
 
-청킹 함수로부터 분할된 작은 텍스트 그룹(청크)에서 노드와 엣지를 추출합니다.
-청킹함수가 생성한 지식그래프의 뺘대와 연결되어 하나의 그래프로 병합됩니다.
-
-구성 요소 개요:
-- `extract_keywords_by_tfidf`: 각 청크 토큰에서 TF-IDF 상위 키워드 추출
-- `lda_keyword_and_similarity`: LDA를 통해 전체/부분 토픽 추정 및 토픽 분포 유사도 행렬 계산
-- `recurrsive_chunking`: 유사도 기반 재귀 청킹(종료 조건/깊이/토큰 수 등 고려)
-- `extract_graph_components`: 전체 파이프라인 실행 → 노드/엣지 구축
-- `manual_chunking`: 소스 없는(-1) 케이스에 대한 청킹 결과만 반환
-
-주의:
-- 형태소 분석기(Okt), gensim LDA 등 외부 라이브러리에 의존합니다. 대형 텍스트에서는 시간이 소요될 수 있습니다.
-- 재귀 청킹은 종료 조건(depth, 토큰 수, 유사도 행렬 유효성 등)을 통해 무한 분할을 방지합니다.
-"""
 import logging
 
 #pip install konlpy, pip install transformers torch scikit-learn
@@ -46,7 +29,7 @@ stopwords_en= set([
 # 한국어용 형태소 분석기
 okt = Okt()
 
-# 영어용 spaCy 모델 
+# english noun extraction 
 nlp_en = spacy.load("en_core_web_sm")
 
 
@@ -176,15 +159,15 @@ def compute_scores(
     return scores, phrases, sim_matrix, all_embeddings
 
 
-#유사도를 기반으로 각 명사구를 그룹으로 묶음
-#상위 5개의 노드를 먼저 선별하고 걔네끼리만 유사도를 계산하면 더 빠를듯
+#Groups noun phrases based on similarity
+#It might be faster to select the top 5 nodes first and calculate similarity only among them
 def group_phrases(
     phrases: List[str],
     phrase_scores: List[dict],
     sim_matrix: np.ndarray,
     threshold: float = 0.98
 ) ->dict:
-    ungrouped = list(range(len(phrases)))  # 인덱스 기반으로
+    ungrouped = list(range(len(phrases)))  # Based on index
     groups = []
 
     while ungrouped:
@@ -196,7 +179,7 @@ def group_phrases(
             if sim_matrix[i][j] >= threshold:
                 to_check.add(j)
 
-        #같은 그룹이 되기 위해서는 그룹 내 모든 명사구들과 유사도가 임계값 이상이어야함
+        #To be in the same group, similarity must be above the threshold with all other noun phrases in the group
         valid_members = []
         for j in to_check:
             if all(sim_matrix[j][k] >= threshold for k in group):
@@ -208,7 +191,7 @@ def group_phrases(
 
         groups.append(group)
 
-    # 대표 명사구 설정: 중심성 점수가 가장 높은 것
+    # Set representative noun phrase: The one with the highest centrality score
     group_infos = {}
     for group in groups:
         sorted_group =sorted(group, key=lambda idx: phrase_scores[phrases[idx]][0], reverse=True)
@@ -250,13 +233,14 @@ def make_edges(sentences:list[str], source_keyword:str, target_keywords:list[str
         
     return edges
 
+
 def make_node(name, phrase_info, sentences:list[str], id:tuple, embeddings):
     """
-    노드를 만들 키워드와 키워드의 등장 위치를 입력 받아 노드를 생성합니다.
-    args:   name: 노드를 만들 키워드
-            phrase_info: 해당 키워드의 등장 인덱스
-            sentences: 전체 텍스트가 문장 단위로 분해된 string의  list
-            source_id: 입력 문서의 고유 source_id       
+    Creates a node by taking the keyword to create a node and the keyword's appearance locations as input.
+    args:    name: The keyword to create the node for
+             phrase_info: The appearance indices for the keyword
+             sentences: A list of strings, the full text split into sentences
+             source_id: The unique source_id of the input document
     """
     description=[]
     ori_sentences=[]
@@ -266,17 +250,17 @@ def make_node(name, phrase_info, sentences:list[str], id:tuple, embeddings):
     if len(s_indices)<=2:
         for idx in s_indices:
             description.append({"description":sentences[idx],
-                            "source_id":source_id})
+                                "source_id":source_id})
             ori_sentences.append({"original_sentence":sentences[idx],
-                            "source_id":source_id,
-                            "score": 1.0})   
+                                "source_id":source_id,
+                                "score": 1.0}) 
 
     else:
         description.append({"description":"",
-                        "source_id":source_id})
+                            "source_id":source_id})
         ori_sentences.append({"original_sentence":"",
-                        "source_id":source_id,
-                        "score": 1.0})   
+                            "source_id":source_id,
+                            "score": 1.0}) 
     
     node={"label":name, "name":name,"source_id":source_id, "descriptions":description, "original_sentences":ori_sentences}
     store_embeddings(node, brain_id, embeddings)
@@ -403,7 +387,7 @@ def split_into_tokenized_sentence(text: str) -> tuple[List, List[str]]:
             logging.error(f"Text included that is neither Korean nor English: {sentence}")
    
         tokenized_sentences.append({"tokens": tokens, "index": idx})
-   
+
     return tokenized_sentences, texts
 
 
