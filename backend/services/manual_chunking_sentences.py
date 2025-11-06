@@ -199,13 +199,13 @@ def gen_node_edges_for_new_groups(chunk:list[dict], new_chunk_groups, top_keywor
                     chunk_node={"label":topics[t_idx],"name":topics[t_idx],
                                 "descriptions":[c["index"] for c in go_chunk[idx]],
                                 "source_id":source_id}
-                    edge={"source": top_keyword, "target": topics[t_idx], "relation":"관련"}
+                    edge={"source": top_keyword, "target": topics[t_idx], "relation":"related"}
                     keywords.append(topics[t_idx])
                 #토픽 키워드가 파생된 문장의 길이가 길면 description이 빈 노드를 생성
                 else:
                     connective_node=topics[t_idx]+"*"
                     chunk_node={"label":topics[t_idx],"name":connective_node,"descriptions":[], "source_id":source_id}
-                    edge={"source": top_keyword, "target": connective_node, "relation":"관련"}
+                    edge={"source": top_keyword, "target": connective_node, "relation":"related"}
                     keywords.append(connective_node)
                 nodes.append(chunk_node)
                 edges.append(edge)
@@ -402,7 +402,7 @@ def extract_graph_components(text: str, id: tuple):
     chunks=[]
     
     tokenized, sentences = split_into_tokenized_sentence(text)
-    
+ 
     #텍스트가 2000자 이상인 경우 재귀 청킹 함수를 호출한다
     if len(text)>=2000:
         chunks, nodes_and_edges, already_made = recurrsive_chunking(tokenized, source_id, 0, "", [],  None, 0)

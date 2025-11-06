@@ -205,14 +205,16 @@ def make_edges(sentences:list[str], source_keyword:str, target_keywords:list[str
     이들 사이의 엣지들을 생성합니다.
     """
     edges=[]
+    source=source_keyword[:-1] if source_keyword[-1] == "*" else source_keyword
+    source_idx = [idx for idx in phrase_info[source]]
     for t in target_keywords:
-        find=source_keyword[:-1] if source_keyword[-1] == "*" else source_keyword
-        if t != find:
+        if t != source:
+            target_idx=[idx for idx in phrase_info[t]]
             relation=""
-            for s_idx in phrase_info[t]:
-                if find in sentences[s_idx]:
+            for s_idx in source_idx:
+                if s_idx in target_idx:
                     relation+=sentences[s_idx]
-            relation="관련" if relation=="" else relation
+            relation="related" if relation=="" else relation
             edges.append({"source":source_keyword, 
                         "target":t,
                         "relation":relation})
@@ -260,9 +262,12 @@ def split_into_tokenized_sentence(text:str):
     """
 
     tokenized_sentences=[]
-    texts=[]
-    for p in re.split(r'(?<=[.!?])\s+', text.strip()):
-        texts.append(p.strip())
+    texts = [
+        s.strip()
+        for s in re.split(r'\.(?:[\[\]0-9\W]*)\s+', text.strip())
+        if s.strip()
+    ]
+
 
     for idx, sentence in enumerate(texts):
         lang=check_lang(sentence)
@@ -279,7 +284,7 @@ def split_into_tokenized_sentence(text:str):
             logging.error(f"한국어도 영어도 아닌 텍스트가 포함되어있습니다: {sentence}")
 
         tokenized_sentences.append({"tokens": tokens, "index": idx})
-
+    print(tokenized_sentences)
     return tokenized_sentences, texts
 
         
@@ -299,11 +304,13 @@ def _extract_from_chunk(sentences: str, id:tuple ,keyword: str, already_made:lis
     phrase_info = defaultdict(set)
 
     phrases, sentences = split_into_tokenized_sentence(sentences)
+    print(f"phrases:{phrases}")
 
     for p in phrases:
         for token in p["tokens"]:
             phrase_info[token].add(p["index"])
 
+    print(f"phrase info:{phrase_info}")
     
     phrase_scores, phrases, sim_matrix, all_embeddings = compute_scores(phrase_info, sentences)
     groups=group_phrases(phrases, phrase_scores, sim_matrix)
