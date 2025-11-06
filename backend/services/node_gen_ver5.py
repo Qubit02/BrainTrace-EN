@@ -82,12 +82,12 @@ def extract_noun_phrases_ko(sentence: str) -> list[str]:
 
 def extract_noun_phrases_en(sentence: str) -> list[str]:
     """
-    영어 문장에서 명사구를 추출합니다.
+    Extracts noun phrases from an English sentence.
     """
     doc = nlp_en(sentence)
     phrases = []
 
-    # spaCy의 noun_chunks 사용
+    # Use spaCy's noun_chunks
     for chunk in doc.noun_chunks:
         phrase = chunk.text.strip()
         phrase=phrase.lower()
@@ -97,26 +97,41 @@ def extract_noun_phrases_en(sentence: str) -> list[str]:
     return phrases
 
 
-def compute_phrase_embedding(
-    phrase: str, 
-    indices: List[int], 
-    sentences: List[str], 
-    total_sentences: int
-) -> tuple:
-    highlighted_texts = [sentences[idx].replace(phrase, f"[{phrase}]") for idx in indices]
-    embeddings = get_embeddings_batch(highlighted_texts)
-    avg_emb = np.mean(embeddings, axis=0)
-    tf = len(indices) / total_sentences
-    return phrase, (tf, avg_emb), embeddings
-
-
     
+def compute_phrase_embedding(
+    phrase: str,
+    indices: List[int],
+    sentences: List[str],
+    lang:str
+) -> tuple[str, tuple[float, np.ndarray], np.ndarray]:
+    """
+    Gets the embeddings of sentences containing a specific phrase and returns their average vector.
+    - phrase: The current word/phrase being processed.
+    - indices: List of sentence indices where the phrase appears.
+    - sentences: The complete list of sentences.
+    Returns: (phrase, avg_emb, embeddings)
+    """
+    # Highlighting
+    highlighted_texts = [sentences[idx].replace(phrase, f"[{phrase}]") for idx in indices]
 
+    # Sentence embeddings
+    embeddings = get_embeddings_batch(highlighted_texts, lang)  # shape: (N, D)
+    embeddings = np.atleast_2d(embeddings)
+
+    # Calculate average vector
+    avg_emb = np.mean(embeddings, axis=0)
+    avg_emb = np.ravel(avg_emb)  # shape (D,)
+
+    return phrase, avg_emb, embeddings
+
+# Function to calculate the importance score of each keyword
+# Calculates centrality score by similarity to the central vector and multiplies by tf score to derive importance score.
 def compute_scores(
     phrase_info: List[dict], 
-    sentences: List[str]
+    sentences: List[str],
+    lang:str,
+    tfidf:dict
 ) -> tuple[Dict[str, tuple[float, np.ndarray]], List[str], np.ndarray]:
-
     scores = {}
     all_embeddings = {}
     total_sentences = len(sentences)
@@ -124,31 +139,33 @@ def compute_scores(
     phrase_embeddings = {}
     central_vecs = []
 
-        # phrase별 평균 임베딩 계산=>phrase별 말고 모든 문장 일반 임베딩으로?
-        # 이거 없애도 될듯(중복 계산, 이미 임베딩 벡터 산출할 때 구함)
+    # Embed sentences where each keyword appears, then average them to create a semantic vector for each keyword.
+    # Also, calculates the tf score for each keyword (Note: TF-IDF is retrieved from the input dict).
     with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = [
-            executor.submit(compute_phrase_embedding, phrase, indices, sentences, total_sentences)
-            for phrase, indices in phrase_info.items()
-        ]
+            futures = [
+                executor.submit(compute_phrase_embedding, phrase, indices, sentences, lang)
+                for phrase, indices in phrase_info.items()
+            ]
 
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Embedding phrases"):
-            phrase, (tf, avg_emb), embedded_vec = future.result()
-            phrase_embeddings[phrase] = (tf, avg_emb)
-            all_embeddings[phrase]=embedded_vec
-            central_vecs.append(avg_emb)
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Embedding phrases"):
+                phrase, avg_emb, embedded_vec = future.result()
+                phrase_embeddings[phrase] =  avg_emb
+                all_embeddings[phrase]=embedded_vec
+                central_vecs.append(avg_emb)
 
-    # 중심 벡터 계산
+    # Calculate the central vector representing the chunk's topic by averaging the embedding values of all sentences in the chunk.
     central_vec = np.mean(central_vecs, axis=0)
 
-    # vector stack for cosine_similarity
+    # Calculate the centrality score for each keyword by computing similarity with the central vector.
+    # Finally, calculate the importance score of each keyword by multiplying with the tf score.
+    # The top 5 keywords by importance score will be selected as nodes (Note: This function provides scores; selection happens elsewhere).
     phrases = list(phrase_embeddings.keys())
     tf_list = []
     emb_list = []
 
     for phrase in phrases:
-        tf, emb = phrase_embeddings[phrase]
-        tf_adj = tf * cosine_similarity([emb], [central_vec])[0][0]
+        emb = phrase_embeddings[phrase]
+        tf_adj = tfidf[phrase] * cosine_similarity([emb], [central_vec])[0][0]
         scores[phrase] = [tf_adj, emb]
         tf_list.append(tf_adj)
         emb_list.append(emb)
@@ -157,6 +174,7 @@ def compute_scores(
     sim_matrix = cosine_similarity(emb_array)
 
     return scores, phrases, sim_matrix, all_embeddings
+
 
 #유사도를 기반으로 각 명사구를 그룹으로 묶음
 #상위 5개의 노드를 먼저 선별하고 걔네끼리만 유사도를 계산하면 더 빠를듯
@@ -199,23 +217,36 @@ def group_phrases(
 
     return group_infos
 
+
 def make_edges(sentences:list[str], source_keyword:str, target_keywords:list[str], phrase_info):
     """
-    루트 노드인 source keyword와 주변노드인 target keywords(여러 개)를 입력 받아,
-    이들 사이의 엣지들을 생성합니다.
+    Takes the root node (source keyword) and surrounding nodes (target keywords - multiple) as input,
+    and generates edges between them.
     """
     edges=[]
+    source=source_keyword[:-1] if source_keyword[-1] == "*" else source_keyword
+    if source in phrase_info.keys():
+        source_idx = [idx for idx in phrase_info[source]]
+    else:
+        source_idx=[]
     for t in target_keywords:
-        find=source_keyword[:-1] if source_keyword[-1] == "*" else source_keyword
-        if t != find:
+        if t != source:
+            target_idx=[idx for idx in phrase_info[t]]
             relation=""
-            for s_idx in phrase_info[t]:
-                if find in sentences[s_idx]:
-                    relation+=sentences[s_idx]
-            relation="관련" if relation=="" else relation
-            edges.append({"source":source_keyword, 
-                        "target":t,
-                        "relation":relation})
+            cnt=0
+            for s_idx in source_idx:
+                if cnt>=4:
+                    break
+                if s_idx in target_idx:
+                    edges.append({"source":source_keyword, 
+                    "target":t,
+                    "relation":sentences[s_idx]})
+                    cnt+=1
+            
+            if cnt==0:
+                edges.append({"source":source_keyword, 
+                    "target":t,
+                    "relation":"Related"})
         
     return edges
 
@@ -252,89 +283,203 @@ def make_node(name, phrase_info, sentences:list[str], id:tuple, embeddings):
 
     return node
 
-def split_into_tokenized_sentence(text:str):
-    """
-        텍스트를 문장 단위로 분할하고 문장별 명사구 토큰을 생성합니다.
-        Returns:
-            Tuple[List[Dict], List[str]]: ({"tokens", "index"} 리스트, 원본 문장 리스트)
-    """
 
-    tokenized_sentences=[]
-    texts=[]
-    for p in re.split(r'(?<=[.!?])\s+', text.strip()):
-        texts.append(p.strip())
-
+def split_into_tokenized_sentence(text: str) -> tuple[List, List[str]]:
+    """
+    Splits the text into sentences.
+   
+    Logic:
+    1. Split the text into text chunks and \n based on the newline character (\n).
+    2. Iterate through the text chunks. When a \n is encountered, check the length of the *preceding text* chunk.
+    3. If the length is 25 characters or less, treat \n as a valid sentence separator.
+       (This is to detect titles/subheadings.)
+    4. If the length is over 25 characters, ignore the \n (replace it with a space) and merge it with the next text chunk.
+       (This is considered a case where a sentence continues onto the next line.)
+    5. For these reconstructed text chunks (merged_lines),
+       apply the intra_line_pattern regex to perform the final sentence splitting.
+    """
+    
+    tokenized_sentences: List[dict] = [] # Changed to List[dict] to match the return type
+    final_sentences: List[str] = []
+    
+    cleaned_text = text.strip()
+    if not cleaned_text:
+        return (tokenized_sentences, final_sentences)
+   
+    intra_line_pattern = r'(?<=[.!?])\s+|(?<=[다요]\.)\s*|(?<=[^a-zA-Z가-힣\s,()[]{}=-%^$@])\s+'
+    
+    # [ List marker split pattern ]
+    list_marker_split_pattern = r'(?=[0-9a-zA-Z가-힣]\.\s+)'
+    list_marker_pattern_for_removal = r'\s+[0-9a-zA-Z가-힣]\.'
+   
+    # [ Step 1: Newline Handling ]
+    blocks = re.split(r'(\n)', cleaned_text)
+    
+    merged_lines = []
+    current_line = ""
+    
+    for block in blocks:
+        if block == '\n':
+            # When \n is encountered, check the currently accumulated current_line
+            stripped_line = current_line.strip()
+            
+            if not stripped_line:
+                # Handle empty lines (consecutive \n)
+                current_line = ""
+                continue
+            
+            # [Core Logic]
+            # Only recognize \n as a separator if the previous text chunk is 25 characters or less
+            if len(stripped_line) <= 25:
+                merged_lines.append(stripped_line) # Recognized as a separator (added as a separate chunk)
+                current_line = ""                 # Start a new chunk
+            else:
+                # If over 25 chars, replace \n with a space and connect to the next chunk
+                current_line += " " 
+        else:
+            # If it's a text chunk (not \n), add it to the current line
+            current_line += block
+            
+    # Process the last remaining text chunk after the loop finishes
+    stripped_last_line = current_line.strip()
+    if stripped_last_line:
+        merged_lines.append(stripped_last_line)
+   
+    # [ Step 2: Sentence splitting with regex ]
+    candidate_sentences = []
+    for line in merged_lines:
+        # Both short lines (<= 25 chars) and long merged lines (> 25 chars)
+        # attempt to split them further using intra_line_pattern
+        sub_sentences = re.split(intra_line_pattern, line)
+        candidate_sentences.extend(sub_sentences)
+   
+   
+    # [Step 3: List Filtering]
+    # Apply filtering logic to all sentence candidates
+    for s in candidate_sentences:
+        s = s.strip()
+        if not s:
+            continue
+   
+        # Perform additional splitting before list markers (1., a., etc.)
+        sub_fragments = re.split(list_marker_split_pattern, s)
+   
+        for fragment in sub_fragments:
+            fragment = fragment.strip()
+   
+            # Detect and remove list markers ("1. ", "a. ")
+            fragment = re.sub(list_marker_pattern_for_removal, '', fragment)
+            fragment = fragment.strip() # Remove any remaining whitespace after marker removal
+            
+            if not fragment:
+                continue
+   
+            # Original filtering logic (length, actual character count)
+            real_chars = re.sub(r'[^a-zA-Z0-9가-힣]', '', fragment)
+            if len(fragment) <= 1 or len(real_chars) <= 1:
+                continue
+            
+            # Final sentence fragment that passed filtering
+            final_sentences.append(fragment)
+   
+    texts = final_sentences
+    
+    lang="en"
+    # Detect the language of each sentence and embed using the appropriate embedding model
     for idx, sentence in enumerate(texts):
-        lang=check_lang(sentence)
-
+        lang = check_lang(sentence)
+   
+        # Call Korean embedding model
         if lang == "ko":
             tokens = extract_noun_phrases_ko(sentence)
+        # Call English embedding model
         elif lang == "en":
             tokens = extract_noun_phrases_en(sentence)
         else:
             tokens = [sentence.strip()]
-
+   
         if not tokens:
-            tokens = [sentence.strip()]  # fallback
-            logging.error(f"한국어도 영어도 아닌 텍스트가 포함되어있습니다: {sentence}")
-
+            tokens = [sentence.strip()]
+            logging.error(f"Text included that is neither Korean nor English: {sentence}")
+   
         tokenized_sentences.append({"tokens": tokens, "index": idx})
-
+   
     return tokenized_sentences, texts
+
 
         
 
-def _extract_from_chunk(sentences: str, id:tuple ,keyword: str, already_made:list[str]) -> tuple[dict, dict, list[str]]:
+def _extract_from_chunk(phrases:list[list[str]], sentences: list[str], id:tuple ,keyword: str, already_made:list[str], tfidf:dict) -> tuple[dict, dict, list[str]]:
     """
-    최종적으로 분할된 청크를 입력으로 호출됩니다.
-    각 청크에서 중요한 키워드를 골라 노드를 생성하고
-    keyword로 입력받은 노드를 source로 하는 엣지를 생성합니다.
-    이를 통해 청킹 함수가 생성한 지식 그래프와 병합됩니다.
+    Called with the finally divided (finalized) chunk as input.
+    Calculates importance scores for keywords within the chunk and generates nodes and edges based on these scores.
+    Connects the generated nodes to the {topic keyword node passed from the chunking function} via edges,
+    linking them to the knowledge graph created by the chunking function.
     """
     nodes=[]
     edges=[]
 
-    # 명사구로 해당 명사구가 등장한 모든 문장 index를 검색할 수 있도록
-    # 각 명사구를 key로, 명사구가 등장한 문장의 인덱스들의 list를 value로 하는 딕셔너리를 생성합니다.
+    # To enable searching for all sentence indices where a specific noun phrase appears,
+    # create a dictionary where each noun phrase is a key, 
+    # and the value is a list of indices of sentences where it appeared.
     phrase_info = defaultdict(set)
+    lang ="en"
 
-    phrases, sentences = split_into_tokenized_sentence(sentences)
-
-    for p in phrases:
-        for token in p["tokens"]:
-            phrase_info[token].add(p["index"])
-
+    for idx, p in enumerate(phrases):
+        for token in p:
+            phrase_info[token].add(idx)
     
-    phrase_scores, phrases, sim_matrix, all_embeddings = compute_scores(phrase_info, sentences)
+    # Calculate the importance score for each keyword
+    phrase_scores, phrases, sim_matrix, all_embeddings = compute_scores(phrase_info, sentences, lang, tfidf)
+    # Group highly similar keywords; if one keyword in a group is selected as a node, other members become child nodes.
     groups=group_phrases(phrases, phrase_scores, sim_matrix)
 
-    #score순으로 topic keyword를 정렬
+    # Sort the topic keywords by score
     sorted_keywords = sorted(phrase_scores.items(), key=lambda x: x[1][0], reverse=True)
     sorted_keywords=[k[0] for k in sorted_keywords]
 
+    contents=phrase_info.keys()
+
+    # Create a node for the chunk's topic keyword (received from the chunking function)
     cnt=0
+    if keyword != "":
+        if keyword[-1]=="*":
+            find = keyword[:-1]
+        else:
+            find = keyword
+        if find in contents:
+            nodes.append(make_node(keyword, list(phrase_info[find]), sentences, id, all_embeddings[find]))
+        else:
+            return [], [], already_made
+
+    # Create nodes for the top 5 high-scoring keywords, excluding duplicates (those already created as nodes)
     for t in sorted_keywords:
+        # Create edges between {the chunk's topic keyword node} and {the top-scoring keywords within the chunk}
         if keyword != "":
             edges+=make_edges(sentences, keyword, [t], phrase_info)
+
+        else:
+            break
         if t not in already_made:
-            nodes.append(make_node(t, phrase_info, sentences, id, all_embeddings[t]))
+            nodes.append(make_node(t, list(phrase_info[t]), sentences, id, all_embeddings[t]))
             already_made.append(t)
             cnt+=1
+            
+            # If there are keywords highly similar to the selected node, create them as child nodes
             if t in groups:
                 related_keywords=[]
                 for idx in range(min(len(groups[t]), 5)):
                     if phrases[idx] not in already_made:
                         related_keywords.append(phrases[idx])
                         already_made.append(phrases[idx])
-                        nodes.append(make_node(phrases[idx], phrase_info, sentences, id, all_embeddings[phrases[idx]]))
-                        edges+=make_edges(sentences, t, related_keywords, phrase_info)   
+                        node=make_node(phrases[idx], list(phrase_info[t]), sentences, id, all_embeddings[phrases[idx]])
+                        nodes.append(node)
+                        edge=make_edges(sentences, t, related_keywords, phrase_info)
+                        edges+=edge  
                     
         if cnt==5:
             break
-    
-
     return nodes, edges, already_made
-
 
 def check_lang(text:str):
     lang, _ =langid.classify(text)
