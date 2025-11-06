@@ -22,31 +22,31 @@ As more documents are added, the graph becomes increasingly sophisticated, and b
 
 <img width="2048" height="800" alt="flowchart_height_800" src="https://github.com/user-attachments/assets/f8efb47b-f155-466f-809b-d4ff0568e508" />
 
-1.** Text Extraction**:
+1. **Text Extraction**:
    Extracts text from sources such as PDFs, text files, memos, Markdown, and DOCX files.
 
    ```python
-# backend/routers/brain_graph.py (Excerpt)
-@router.get("/getSourceContent",
-    summary="Get text content of a source file",
-    description="Returns the text content based on the file type for a given source_id.")
-async def get_source_content(source_id: str, brain_id: str):
-    db = SQLiteHandler()
-    pdf = db.get_pdf(int(source_id))
-    textfile = db.get_textfile(int(source_id))
-    memo = db.get_memo(int(source_id))
-    md = db.get_mdfile(int(source_id))
-    docx = db.get_docxfile(int(source_id))
-    if pdf:
-        content = pdf.get('pdf_text', '')
-        title = pdf.get('pdf_title', '')
-        file_type = 'pdf'
-    elif textfile:
-        content = textfile.get('txt_text', '')
-        title = textfile.get('txt_title', '')
-        file_type = 'textfile'
-    # ... (Title inclusion for memo/md/docx branches as well)
-    return {"content": content, "title": title, "type": file_type}
+   # backend/routers/brain_graph.py (Excerpt)
+   @router.get("/getSourceContent",
+       summary="Get text content of a source file",
+       description="Returns the text content based on the file type for a given source_id.")
+   async def get_source_content(source_id: str, brain_id: str):
+       db = SQLiteHandler()
+       pdf = db.get_pdf(int(source_id))
+       textfile = db.get_textfile(int(source_id))
+       memo = db.get_memo(int(source_id))
+       md = db.get_mdfile(int(source_id))
+       docx = db.get_docxfile(int(source_id))
+       if pdf:
+           content = pdf.get('pdf_text', '')
+           title = pdf.get('pdf_title', '')
+           file_type = 'pdf'
+       elif textfile:
+           content = textfile.get('txt_text', '')
+           title = textfile.get('txt_title', '')
+           file_type = 'textfile'
+       # ... (Title inclusion for memo/md/docx branches as well)
+       return {"content": content, "title": title, "type": file_type}
    ```
 
 2. **Tokenization**:
